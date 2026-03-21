@@ -1,6 +1,65 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 export const Footer = () => {
+  const [starCount, setStarCount] = useState(null);
+  const [isStarring, setIsStarring] = useState(false);
+
+  // Fetch GitHub star count
+  useEffect(() => {
+    const fetchStarCount = async () => {
+      try {
+        const response = await fetch(
+          "https://api.github.com/repos/sandunMadhushan/free-cv-builder",
+        );
+        const data = await response.json();
+        setStarCount(data.stargazers_count);
+      } catch (error) {
+        console.error("Failed to fetch star count:", error);
+        setStarCount("0"); // Fallback when API fails
+      }
+    };
+
+    fetchStarCount();
+  }, []);
+
+  const handleStarRepo = async () => {
+    setIsStarring(true);
+
+    try {
+      // Try to star the repository using GitHub API
+      const response = await fetch('https://api.github.com/user/starred/sandunMadhushan/free-cv-builder', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (response.ok) {
+        // Successfully starred! Update the star count
+        setStarCount(prev => prev !== null ? parseInt(prev) + 1 : 1);
+        console.log('Repository starred successfully!');
+      } else {
+        // API call failed (user not signed in or CORS issue), fallback to opening GitHub
+        window.open(
+          "https://github.com/sandunMadhushan/free-cv-builder",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+    } catch (error) {
+      // Network error or CORS issue, fallback to opening GitHub
+      console.log('Falling back to GitHub page:', error);
+      window.open(
+        "https://github.com/sandunMadhushan/free-cv-builder",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } finally {
+      setIsStarring(false);
+    }
+  };
+
   return (
     <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6 transition-colors relative overflow-hidden">
       {/* Subtle gradient background */}
@@ -22,15 +81,66 @@ export const Footer = () => {
             />
           </svg>
           <span>by</span>
-          <strong className="text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-default">
-            Sandun Madhushan
-          </strong>
-        </div>
-
-        {/* Right side - Links */}
-        <div className="flex items-center space-x-4">
           <a
             href="https://github.com/sandunMadhushan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer hover:underline"
+          >
+            Sandun Madhushan
+          </a>
+        </div>
+
+        {/* Right side - Star count and GitHub link */}
+        <div className="flex items-center space-x-3">
+          {/* Star count button */}
+          <button
+            onClick={handleStarRepo}
+            disabled={isStarring}
+            className={`flex items-center space-x-2 text-sm transition-all duration-300 group px-3 py-1.5 rounded-full cursor-pointer ${
+              isStarring
+                ? 'text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-wait'
+                : 'text-gray-600 dark:text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400 bg-gray-50 dark:bg-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+            }`}
+            title={isStarring ? "Starring repository..." : "Star this repository on GitHub"}
+          >
+            {isStarring ? (
+              <svg
+                className="w-4 h-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              <svg
+                className="w-4 h-4 group-hover:scale-110 transition-transform"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.588 4.897a1 1 0 00.95.69h5.146c.969 0 1.371 1.24.588 1.81l-4.166 3.022a1 1 0 00-.364 1.118l1.588 4.897c.3.921-.755 1.688-1.54 1.118l-4.166-3.022a1 1 0 00-1.175 0l-4.166 3.022c-.785.57-1.84-.197-1.54-1.118l1.588-4.897a1 1 0 00-.364-1.118L2.463 10.324c-.783-.57-.38-1.81.588-1.81h5.146a1 1 0 00.95-.69l1.588-4.897z" />
+              </svg>
+            )}
+            <span className="font-medium">
+              {isStarring ? "..." : (starCount !== null ? starCount : "...")}
+            </span>
+          </button>
+
+          {/* GitHub repo button */}
+          <a
+            href="https://github.com/sandunMadhushan/free-cv-builder"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-full"
