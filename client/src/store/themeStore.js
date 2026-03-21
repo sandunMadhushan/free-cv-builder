@@ -5,6 +5,8 @@ import { devtools, persist } from 'zustand/middleware';
 const initialState = {
   isDark: false, // Default to light mode
   theme: 'light', // 'light' | 'dark' | 'system'
+  previewIsDark: false, // Separate theme for CV preview
+  previewTheme: 'light', // Preview can have independent theme
 };
 
 // Apply theme to document
@@ -15,9 +17,12 @@ const applyTheme = (theme) => {
     root.classList.add('dark');
     root.classList.remove('light');
   } else {
-    root.classList.add('light');
     root.classList.remove('dark');
+    root.classList.add('light');
   }
+
+  // Force a re-render by updating a CSS custom property
+  root.style.setProperty('--theme-updated', Date.now());
 };
 
 // Get system preference
@@ -44,6 +49,23 @@ export const useThemeStore = create(
           });
 
           applyTheme(newTheme);
+
+          // Debug log to help troubleshoot
+          console.log('Theme toggled:', { newTheme, newIsDark, documentClasses: document.documentElement.classList.toString() });
+        },
+
+        // Toggle preview theme independently
+        togglePreviewTheme: () => {
+          const state = get();
+          const newPreviewIsDark = !state.previewIsDark;
+          const newPreviewTheme = newPreviewIsDark ? 'dark' : 'light';
+
+          set({
+            previewIsDark: newPreviewIsDark,
+            previewTheme: newPreviewTheme
+          });
+
+          console.log('Preview theme toggled:', { newPreviewTheme, newPreviewIsDark });
         },
 
         // Set specific theme
@@ -82,12 +104,34 @@ export const useThemeStore = create(
           const state = get();
           let isDark = state.isDark;
 
-          if (state.theme === 'system') {
+          // If theme is system, detect system preference
+          if (state.theme === 'system' || state.theme === undefined) {
             isDark = getSystemPreference();
-            set({ isDark });
+            set({
+              isDark,
+              theme: 'system'
+            });
           }
 
+          // Always apply the theme to ensure DOM is updated
           applyTheme(isDark ? 'dark' : 'light');
+
+          // Set up system theme change listener if needed
+          if (state.theme === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => {
+              const currentState = get();
+              if (currentState.theme === 'system') {
+                const systemIsDark = mediaQuery.matches;
+                set({ isDark: systemIsDark });
+                applyTheme(systemIsDark ? 'dark' : 'light');
+              }
+            };
+
+            // Remove existing listener if any
+            mediaQuery.removeEventListener('change', handleChange);
+            mediaQuery.addEventListener('change', handleChange);
+          }
         },
 
         // Get current theme info
@@ -98,6 +142,17 @@ export const useThemeStore = create(
             isDark: state.isDark,
             icon: state.isDark ? '🌙' : '☀️',
             label: state.isDark ? 'Dark' : 'Light'
+          };
+        },
+
+        // Get preview theme info
+        getPreviewThemeInfo: () => {
+          const state = get();
+          return {
+            theme: state.previewTheme,
+            isDark: state.previewIsDark,
+            icon: state.previewIsDark ? '🌙' : '☀️',
+            label: state.previewIsDark ? 'Dark Preview' : 'Light Preview'
           };
         }
       }),

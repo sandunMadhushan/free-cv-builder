@@ -89,10 +89,10 @@ function App() {
       {/* Loading overlay during PDF export */}
       {isExporting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-700">Generating your PDF...</p>
-            <p className="text-sm text-gray-500 mt-2">This may take a few seconds</p>
+            <p className="text-gray-700 dark:text-gray-200">Generating your PDF...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This may take a few seconds</p>
           </div>
         </div>
       )}
@@ -103,8 +103,8 @@ function App() {
           <div
             className={`max-w-sm rounded-lg shadow-lg p-4 ${
               exportStatus === 'success'
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-red-50 border border-red-200'
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
             }`}
           >
             <div className="flex items-start">
@@ -130,14 +130,14 @@ function App() {
               <div className="ml-3 flex-1">
                 <p
                   className={`text-sm font-medium ${
-                    exportStatus === 'success' ? 'text-green-800' : 'text-red-800'
+                    exportStatus === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
                   }`}
                 >
                   {exportStatus === 'success' ? 'Export Successful!' : 'Export Failed'}
                 </p>
                 <p
                   className={`text-sm mt-1 whitespace-pre-line ${
-                    exportStatus === 'success' ? 'text-green-700' : 'text-red-700'
+                    exportStatus === 'success' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
                   }`}
                 >
                   {exportMessage}

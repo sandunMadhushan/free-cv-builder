@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { useCVStore } from '../../store/cvStore';
 import { useTemplateStore } from '../../store/templateStore';
+import { useThemeStore } from '../../store/themeStore';
 import { ModernTemplate } from './templates/ModernTemplate';
 import { ClassicTemplate } from './templates/ClassicTemplate';
 import { MinimalTemplate } from './templates/MinimalTemplate';
+import { PreviewThemeToggle } from '../common/PreviewThemeToggle';
 
 export const CVPreview = () => {
   // Subscribe to individual pieces of CV data to avoid infinite loops
@@ -21,6 +23,9 @@ export const CVPreview = () => {
   // Subscribe to template settings
   const selectedTemplate = useTemplateStore((state) => state.selectedTemplate);
   const customization = useTemplateStore((state) => state.customization);
+
+  // Subscribe to preview theme
+  const previewIsDark = useThemeStore((state) => state.previewIsDark);
 
   // Memoize the cvData object to prevent unnecessary re-renders
   const cvData = useMemo(() => ({
@@ -62,8 +67,18 @@ export const CVPreview = () => {
   };
 
   return (
-    <div className="w-full flex justify-center">
-      {renderTemplate()}
+    <div className="w-full flex flex-col">
+      {/* Preview Theme Toggle */}
+      <div className="flex justify-end p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <PreviewThemeToggle />
+      </div>
+
+      {/* CV Preview with independent theme */}
+      <div className={`flex justify-center flex-1 ${previewIsDark ? 'dark' : ''}`}>
+        <div className="w-full flex justify-center">
+          {renderTemplate()}
+        </div>
+      </div>
     </div>
   );
 };
