@@ -5,6 +5,7 @@ import { ExperienceForm } from './sections/ExperienceForm';
 import { EducationForm } from './sections/EducationForm';
 import { SkillsForm } from './sections/SkillsForm';
 import { SectionManager } from './SectionManager';
+import { Customization } from '../customization/Customization';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -15,6 +16,7 @@ export const SidebarForm = () => {
     { id: 'experience', label: 'Experience', component: ExperienceForm },
     { id: 'education', label: 'Education', component: EducationForm },
     { id: 'skills', label: 'Skills', component: SkillsForm },
+    { id: 'customize', label: 'Customize', component: Customization },
     { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];
 

@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { useCVStore } from '../../store/cvStore';
 import { useTemplateStore } from '../../store/templateStore';
 import { ModernTemplate } from './templates/ModernTemplate';
+import { ClassicTemplate } from './templates/ClassicTemplate';
+import { MinimalTemplate } from './templates/MinimalTemplate';
 
 export const CVPreview = () => {
   // Subscribe to individual pieces of CV data to avoid infinite loops
@@ -45,10 +47,15 @@ export const CVPreview = () => {
     activeSections,
   ]);
 
-  // Template rendering logic (will expand with more templates later)
+  // Template rendering logic
   const renderTemplate = () => {
     switch (selectedTemplate) {
       case 'modern':
+        return <ModernTemplate cvData={cvData} customization={customization} />;
+      case 'classic':
+        return <ClassicTemplate cvData={cvData} customization={customization} />;
+      case 'minimal':
+        return <MinimalTemplate cvData={cvData} customization={customization} />;
       default:
         return <ModernTemplate cvData={cvData} customization={customization} />;
     }
