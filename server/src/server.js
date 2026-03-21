@@ -6,16 +6,19 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import session from "express-session";
+import cookieParser from "cookie-parser";
 
 // Import routes
 import cvRoutes from "./routes/cvRoutes.js";
 import shareRoutes from "./routes/shareRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(
@@ -29,6 +32,8 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -36,6 +41,23 @@ app.use(morgan("combined"));
 app.use(compression());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Cookie parser for session management
+app.use(cookieParser());
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key-here",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }),
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -51,6 +73,7 @@ app.use("/api/", limiter);
 // Routes
 app.use("/api/cv", cvRoutes);
 app.use("/api/share", shareRoutes);
+app.use("/api/auth", authRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -71,6 +94,8 @@ app.get("/", (req, res) => {
       health: "/health",
       cv: "/api/cv",
       share: "/api/share",
+      auth: "/api/auth",
+      github: "/api/auth/github",
     },
   });
 });

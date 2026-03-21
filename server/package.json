@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "build": "echo 'No build step required'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -29,7 +30,10 @@
     "compression": "^1.7.4",
     "express-rate-limit": "^7.1.5",
     "nanoid": "^5.0.4",
-    "joi": "^17.11.0"
+    "joi": "^17.11.0",
+    "axios": "^1.6.0",
+    "express-session": "^1.17.3",
+    "cookie-parser": "^1.4.6"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

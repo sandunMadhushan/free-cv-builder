@@ -5,30 +5,32 @@ export const Footer = () => {
   const [lastStarCount, setLastStarCount] = useState(null);
   const [isStarring, setIsStarring] = useState(false);
   const [starMessage, setStarMessage] = useState(null); // { type: 'success' | 'info', text: string }
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isStarred, setIsStarred] = useState(false);
 
-  // Fetch GitHub star count
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cv-builder-api.onrender.com';
+
+  // Fetch GitHub star count and auth status
   useEffect(() => {
-    const fetchStarCount = async () => {
-      try {
-        const response = await fetch(
-          "https://api.github.com/repos/sandunMadhushan/free-cv-builder",
-        );
-        const data = await response.json();
-        setLastStarCount(starCount);
-        setStarCount(data.stargazers_count);
-      } catch (error) {
-        console.error("Failed to fetch star count:", error);
-        setStarCount("0"); // Fallback when API fails
-      }
+    const initializeData = async () => {
+      await Promise.all([
+        fetchStarCount(),
+        checkAuthStatus(),
+      ]);
     };
 
-    fetchStarCount();
+    initializeData();
 
-    // Auto-refresh star count when user comes back to the tab (in case they starred the repo)
+    // Auto-refresh star count when user comes back to the tab
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Delay refresh slightly to allow GitHub to process the star
-        setTimeout(refreshStarCount, 1000);
+        setTimeout(() => {
+          fetchStarCount();
+          if (isAuthenticated) {
+            checkStarStatus();
+          }
+        }, 1000);
       }
     };
 
@@ -39,136 +41,189 @@ export const Footer = () => {
     };
   }, []);
 
+  // Check auth status when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkStarStatus();
+    }
+  }, [isAuthenticated]);
+
+  const fetchStarCount = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/repo/stars`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      setLastStarCount(starCount);
+      setStarCount(data.starCount || 0);
+    } catch (error) {
+      console.error("Failed to fetch star count:", error);
+      setStarCount(0); // Fallback when API fails
+    }
+  };
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      setIsAuthenticated(data.authenticated);
+      setUser(data.user);
+    } catch (error) {
+      console.error("Failed to check auth status:", error);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const checkStarStatus = async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/repo/star/status`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      if (data.authenticated) {
+        setIsStarred(data.isStarred);
+      }
+    } catch (error) {
+      console.error("Failed to check star status:", error);
+    }
+  };
+
   const handleStarRepo = async () => {
     if (isStarring) return;
 
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Initiate GitHub OAuth flow
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const data = await response.json();
+
+        if (data.success && data.authUrl) {
+          // Open GitHub OAuth in a popup
+          const popup = window.open(
+            data.authUrl,
+            'github-auth',
+            'width=600,height=700,scrollbars=yes,resizable=yes'
+          );
+
+          // Listen for the popup to close or receive a message
+          const checkClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkClosed);
+              // Check if auth was successful
+              setTimeout(async () => {
+                await checkAuthStatus();
+                if (isAuthenticated) {
+                  // Try to star after successful auth
+                  setTimeout(() => handleStarRepo(), 500);
+                }
+              }, 1000);
+            }
+          }, 1000);
+
+          // Listen for messages from the popup (if callback includes postMessage)
+          const handleMessage = (event) => {
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data.type === 'github-auth-success') {
+              popup.close();
+              clearInterval(checkClosed);
+              checkAuthStatus().then(() => {
+                setTimeout(() => handleStarRepo(), 500);
+              });
+            }
+
+            window.removeEventListener('message', handleMessage);
+          };
+
+          window.addEventListener('message', handleMessage);
+        } else {
+          setStarMessage({
+            type: 'info',
+            text: '❌ Failed to initiate GitHub authentication'
+          });
+        }
+      } catch (error) {
+        console.error('GitHub auth error:', error);
+        setStarMessage({
+          type: 'info',
+          text: '❌ Failed to connect to authentication service'
+        });
+      }
+      return;
+    }
+
+    // User is authenticated, proceed with starring
     setIsStarring(true);
 
     try {
-      let starred = false;
+      const endpoint = isStarred ? '/api/auth/repo/star' : '/api/auth/repo/star';
+      const method = isStarred ? 'DELETE' : 'POST';
 
-      // Method 1: Try GitHub API with browser session authentication
-      try {
-        const response = await fetch('https://api.github.com/user/starred/sandunMadhushan/free-cv-builder', {
-          method: 'PUT',
-          headers: {
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: method,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (response.ok || response.status === 204) {
-          starred = true;
-          setStarMessage({ type: 'success', text: '⭐ Repository starred successfully!' });
-          console.log('Successfully starred via API!');
-        }
-      } catch (apiError) {
-        console.log('API method failed:', apiError);
-      }
+      const data = await response.json();
 
-      // Method 2: Try GitHub's web star endpoint
-      if (!starred) {
-        try {
-          const response = await fetch('https://github.com/sandunMadhushan/free-cv-builder/star', {
-            method: 'PUT',
-            headers: {
-              'Accept': '*/*',
-              'X-Requested-With': 'XMLHttpRequest',
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            credentials: 'include',
-            mode: 'cors'
-          });
-
-          if (response.ok || response.status === 204) {
-            starred = true;
-            setStarMessage({ type: 'success', text: '⭐ Repository starred successfully!' });
-            console.log('Successfully starred via web endpoint!');
-          }
-        } catch (webError) {
-          console.log('Web star endpoint failed:', webError);
-        }
-      }
-
-      // Method 3: Try alternative GitHub endpoints with different approaches
-      if (!starred) {
-        try {
-          // Try with different headers to mimic GitHub's web interface
-          const response = await fetch('https://api.github.com/user/starred/sandunMadhushan/free-cv-builder', {
-            method: 'PUT',
-            headers: {
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': navigator.userAgent,
-              'Origin': window.location.origin,
-              'Referer': window.location.href,
-            },
-            credentials: 'include',
-            mode: 'cors'
-          });
-
-          if (response.ok || response.status === 204) {
-            starred = true;
-            setStarMessage({ type: 'success', text: '⭐ Repository starred successfully!' });
-            console.log('Successfully starred via alternative headers!');
-          }
-        } catch (altError) {
-          console.log('Alternative headers method failed:', altError);
-        }
-      }
-
-      // Update star count if any method worked
-      if (starred) {
+      if (data.success) {
+        setIsStarred(!isStarred);
         setLastStarCount(starCount);
-        setStarCount(prev => prev !== null ? parseInt(prev) + 1 : 1);
+        setStarCount(data.starCount);
 
-        // Refresh real count after a delay in background
-        setTimeout(refreshStarCount, 2000);
-      } else {
-        // All direct methods failed - show helpful message but don't open popup
         setStarMessage({
-          type: 'info',
-          text: '🔐 Please sign in to GitHub in this browser to star repositories directly'
+          type: 'success',
+          text: isStarred ? '⭐ Repository unstarred!' : '⭐ Repository starred successfully!'
         });
 
-        // Still refresh count in background in case user starred elsewhere
-        setTimeout(refreshStarCount, 3000);
+        // Refresh star count after a short delay
+        setTimeout(fetchStarCount, 2000);
+      } else {
+        throw new Error(data.message || 'Failed to update star status');
       }
 
     } catch (error) {
       console.error('Error starring repository:', error);
-      setStarMessage({
-        type: 'info',
-        text: '❌ Unable to star repository. Please try again.'
-      });
+
+      if (error.message?.includes('Authentication')) {
+        setStarMessage({
+          type: 'info',
+          text: '🔑 Authentication expired. Please sign in again.'
+        });
+        // Reset auth state
+        setIsAuthenticated(false);
+        setUser(null);
+      } else {
+        setStarMessage({
+          type: 'info',
+          text: '❌ Failed to update star. Please try again.'
+        });
+      }
     } finally {
       setIsStarring(false);
 
-      // Clear message after 4 seconds
+      // Clear message after 5 seconds
       setTimeout(() => {
         setStarMessage(null);
-      }, 4000);
-    }
-  };
-
-  const refreshStarCount = async () => {
-    try {
-      const response = await fetch(
-        "https://api.github.com/repos/sandunMadhushan/free-cv-builder",
-      );
-      const data = await response.json();
-      setLastStarCount(starCount);
-      setStarCount(data.stargazers_count);
-
-      // Reset animation after a short delay
-      setTimeout(() => {
-        setLastStarCount(data.stargazers_count);
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to refresh star count:", error);
+      }, 5000);
     }
   };
 
@@ -212,9 +267,19 @@ export const Footer = () => {
             className={`flex items-center space-x-2 text-sm transition-all duration-300 group px-3 py-1.5 rounded-full ${
               isStarring
                 ? 'text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-wait'
+                : isStarred
+                ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 cursor-pointer'
                 : 'text-gray-600 dark:text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400 bg-gray-50 dark:bg-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 cursor-pointer'
             }`}
-            title={isStarring ? "Adding star..." : "⭐ Star this repository (instantly adds to your GitHub stars)"}
+            title={
+              isStarring
+                ? "Processing..."
+                : !isAuthenticated
+                ? "⭐ Click to sign in with GitHub and star this repository"
+                : isStarred
+                ? "⭐ Unstar this repository"
+                : "⭐ Star this repository"
+            }
           >
             {isStarring ? (
               <svg
@@ -238,8 +303,10 @@ export const Footer = () => {
               </svg>
             ) : (
               <svg
-                className="w-4 h-4 group-hover:scale-110 transition-transform"
-                fill="currentColor"
+                className={`w-4 h-4 group-hover:scale-110 transition-transform ${
+                  isStarred ? 'text-yellow-500' : ''
+                }`}
+                fill={isStarred ? 'currentColor' : 'currentColor'}
                 viewBox="0 0 20 20"
               >
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.588 4.897a1 1 0 00.95.69h5.146c.969 0 1.371 1.24.588 1.81l-4.166 3.022a1 1 0 00-.364 1.118l1.588 4.897c.3.921-.755 1.688-1.54 1.118l-4.166-3.022a1 1 0 00-1.175 0l-4.166 3.022c-.785.57-1.84-.197-1.54-1.118l1.588-4.897a1 1 0 00-.364-1.118L2.463 10.324c-.783-.57-.38-1.81.588-1.81h5.146a1 1 0 00.95-.69l1.588-4.897z" />
@@ -252,6 +319,11 @@ export const Footer = () => {
             }`}>
               {isStarring ? "..." : (starCount !== null ? starCount : "...")}
             </span>
+            {!isAuthenticated && !isStarring && (
+              <svg className="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            )}
           </button>
 
           {/* GitHub repo button */}
@@ -289,6 +361,15 @@ export const Footer = () => {
           </a>
         </div>
       </div>
+
+      {/* Authentication status (for development) */}
+      {import.meta.env.DEV && isAuthenticated && user && (
+        <div className="relative z-10 mt-2 text-center">
+          <p className="text-xs text-green-600 dark:text-green-400">
+            ✅ Signed in as {user.name || user.login}
+          </p>
+        </div>
+      )}
 
       {/* Additional credits row */}
       <div className="relative z-10 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">

@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: cv-builder-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: cv-builder-db
+          property: connectionString
+      - key: CLIENT_URL
+        value: https://free-cv-builder.netlify.app
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CALLBACK_URL
+        value: https://cv-builder-api.onrender.com/api/auth/github/callback
+
+databases:
+  - name: cv-builder-db
+    databaseName: cv-builder
+    user: cv-builder-admin
+    region: oregon
+    plan: free
