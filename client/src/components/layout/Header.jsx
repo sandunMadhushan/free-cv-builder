@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../common/Button';
 import { AutoSaveStatus } from '../common/AutoSaveStatus';
-import { ThemeToggle } from '../common/ThemeToggle';
+// Temporarily hidden - import { ThemeToggle } from '../common/ThemeToggle';
 import { Tooltip } from '../common/Tooltip';
 import { useCVStore } from '../../store/cvStore';
 
@@ -32,7 +32,8 @@ export const Header = ({ onExport, onShare }) => {
 
         {/* Actions */}
         <div className="flex items-center space-x-3">
-          <ThemeToggle />
+          {/* Temporarily hidden - ThemeToggle */}
+          {/* <ThemeToggle /> */}
 
           {/* Share CV button */}
           <Tooltip content="Share CV online" position="bottom">
