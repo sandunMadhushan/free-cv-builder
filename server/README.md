@@ -75,13 +75,13 @@
    # GitHub OAuth (you'll get these from GitHub OAuth app)
    GITHUB_CLIENT_ID=your_github_client_id
    GITHUB_CLIENT_SECRET=your_github_client_secret
-   GITHUB_CALLBACK_URL=https://cv-builder-api.onrender.com/api/auth/github/callback
+   GITHUB_CALLBACK_URL=https://cv-builder-api-fexd.onrender.com/api/auth/github/callback
    ```
 
 4. **Deploy**
    - Click "Create Web Service"
    - Render will automatically build and deploy
-   - **Your API URL will be:** `https://cv-builder-api.onrender.com`
+   - **Your API URL will be:** `https://cv-builder-api-fexd.onrender.com`
    - **Note:** Free tier goes to sleep after 15 minutes of inactivity, but wakes up automatically
 
 ### Step 3: Create GitHub OAuth Application
@@ -94,7 +94,7 @@
    Application name: CV Builder
    Homepage URL: https://free-cv-builder.netlify.app
    Application description: Free CV Builder with GitHub integration
-   Authorization callback URL: https://cv-builder-api.onrender.com/api/auth/github/callback
+   Authorization callback URL: https://cv-builder-api-fexd.onrender.com/api/auth/github/callback
    ```
 
 3. **Register Application**
@@ -115,7 +115,7 @@
 1. **Update your frontend environment file:**
    ```bash
    # File: client/.env.production
-   VITE_API_URL=https://cv-builder-api.onrender.com
+   VITE_API_URL=https://cv-builder-api-fexd.onrender.com
    ```
 
 2. **Commit and push changes** - Netlify will auto-deploy
@@ -123,11 +123,11 @@
 ### Step 5: Test Your Deployment
 
 1. **Check API Health:**
-   - Visit: `https://cv-builder-api.onrender.com/`
+   - Visit: `https://cv-builder-api-fexd.onrender.com/`
    - Should see API documentation
 
 2. **Test Health Endpoint:**
-   - Visit: `https://cv-builder-api.onrender.com/health`
+   - Visit: `https://cv-builder-api-fexd.onrender.com/health`
    - Should return `{"status":"OK",...}`
 
 3. **Test on Frontend:**
@@ -196,7 +196,7 @@
 | `SESSION_SECRET` | Session encryption | Random strong string | ✅ |
 | `GITHUB_CLIENT_ID` | OAuth Client ID | From GitHub OAuth app | ✅ |
 | `GITHUB_CLIENT_SECRET` | OAuth Client Secret | From GitHub OAuth app | ✅ |
-| `GITHUB_CALLBACK_URL` | OAuth callback | `https://cv-builder-api.onrender.com/api/auth/github/callback` | ✅ |
+| `GITHUB_CALLBACK_URL` | OAuth callback | `https://cv-builder-api-fexd.onrender.com/api/auth/github/callback` | ✅ |
 
 ## Troubleshooting
 

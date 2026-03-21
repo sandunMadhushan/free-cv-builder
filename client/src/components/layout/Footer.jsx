@@ -9,15 +9,13 @@ export const Footer = () => {
   const [user, setUser] = useState(null);
   const [isStarred, setIsStarred] = useState(false);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cv-builder-api.onrender.com';
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL || "https://cv-builder-api-fexd.onrender.com";
 
   // Fetch GitHub star count and auth status
   useEffect(() => {
     const initializeData = async () => {
-      await Promise.all([
-        fetchStarCount(),
-        checkAuthStatus(),
-      ]);
+      await Promise.all([fetchStarCount(), checkAuthStatus()]);
     };
 
     initializeData();
@@ -34,10 +32,10 @@ export const Footer = () => {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -51,8 +49,8 @@ export const Footer = () => {
   const fetchStarCount = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/repo/stars`, {
-        method: 'GET',
-        credentials: 'include',
+        method: "GET",
+        credentials: "include",
       });
       const data = await response.json();
 
@@ -64,16 +62,65 @@ export const Footer = () => {
     }
   };
 
+  const establishSession = async (userData) => {
+    try {
+      console.log("Establishing session with user data...");
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user: userData,
+          access_token: userData.access_token,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Session establishment response:", data);
+
+      if (data.success && data.authenticated) {
+        // Update local state
+        setIsAuthenticated(true);
+        setUser(data.user);
+
+        // Show success message and proceed with starring
+        setStarMessage({
+          type: "success",
+          text: "✅ Authentication complete! Starring repository...",
+        });
+
+        // Wait a moment then proceed with starring
+        setTimeout(() => {
+          console.log(
+            "Session established successfully, proceeding to star repository",
+          );
+          handleStarRepo(true); // Skip auth check since we just authenticated
+        }, 500);
+      } else {
+        throw new Error(data.message || "Failed to establish session");
+      }
+    } catch (error) {
+      console.error("Failed to establish session:", error);
+      setStarMessage({
+        type: "info",
+        text: "✅ Authenticated! Please click the star button to complete the process.",
+      });
+    }
+  };
+
   const checkAuthStatus = async () => {
     try {
-      console.log('Checking GitHub auth status...');
+      console.log("Checking GitHub auth status...");
       const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
-        method: 'GET',
-        credentials: 'include',
+        method: "GET",
+        credentials: "include",
       });
       const data = await response.json();
 
-      console.log('Auth status response:', data);
+      console.log("Auth status response:", data);
       setIsAuthenticated(data.authenticated);
       setUser(data.user);
 
@@ -90,10 +137,13 @@ export const Footer = () => {
     if (!isAuthenticated) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/repo/star/status`, {
-        method: 'GET',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/auth/repo/star/status`,
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      );
       const data = await response.json();
 
       if (data.authenticated) {
@@ -106,20 +156,20 @@ export const Footer = () => {
 
   const handleStarRepo = async (skipAuthCheck = false) => {
     if (isStarring) {
-      console.log('Already starring, skipping...');
+      console.log("Already starring, skipping...");
       return;
     }
 
-    console.log('handleStarRepo called:', { isAuthenticated, skipAuthCheck });
+    console.log("handleStarRepo called:", { isAuthenticated, skipAuthCheck });
 
     // Check if user is authenticated (unless we're skipping the check after OAuth)
     if (!skipAuthCheck && !isAuthenticated) {
-      console.log('User not authenticated, initiating OAuth...');
+      console.log("User not authenticated, initiating OAuth...");
       // Initiate GitHub OAuth flow
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
-          method: 'GET',
-          credentials: 'include',
+          method: "GET",
+          credentials: "include",
         });
         const data = await response.json();
 
@@ -127,8 +177,8 @@ export const Footer = () => {
           // Open GitHub OAuth in a popup
           const popup = window.open(
             data.authUrl,
-            'github-auth',
-            'width=600,height=700,scrollbars=yes,resizable=yes'
+            "github-auth",
+            "width=600,height=700,scrollbars=yes,resizable=yes",
           );
 
           // Listen for the popup to close or receive a message
@@ -150,110 +200,85 @@ export const Footer = () => {
           const handleMessage = (event) => {
             // Accept messages from our backend domain
             const backendDomain = new URL(API_BASE_URL).origin;
-            if (event.origin !== window.location.origin && event.origin !== backendDomain) {
+            if (
+              event.origin !== window.location.origin &&
+              event.origin !== backendDomain
+            ) {
               return;
             }
 
-            if (event.data.type === 'github-auth-success') {
+            if (event.data.type === "github-auth-success") {
               popup.close();
               clearInterval(checkClosed);
 
               // Show success message
               setStarMessage({
-                type: 'success',
-                text: '✅ GitHub authentication successful! Starring repository...'
+                type: "success",
+                text: "✅ GitHub authentication successful! Establishing session...",
               });
 
-              // Wait a bit for the session to be available, then check auth and auto-star
-              setTimeout(async () => {
-                console.log('Starting auth check and auto-star process...');
+              // Get user data from popup
+              const userData = event.data.user;
+              console.log("Received user data from popup:", userData);
 
-                try {
-                  // Check authentication status multiple times to ensure session is ready
-                  let authResult = false;
-                  let attempts = 0;
-                  const maxAttempts = 5;
+              if (!userData || !userData.access_token) {
+                console.error("No user data received from popup");
+                setStarMessage({
+                  type: "info",
+                  text: "❌ Authentication failed - no user data received",
+                });
+                return;
+              }
 
-                  while (!authResult && attempts < maxAttempts) {
-                    attempts++;
-                    console.log(`Auth check attempt ${attempts}/${maxAttempts}...`);
-
-                    authResult = await checkAuthStatus();
-
-                    if (!authResult && attempts < maxAttempts) {
-                      // Wait between attempts
-                      await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                  }
-
-                  if (authResult) {
-                    // Wait a bit more to ensure state is updated
-                    setTimeout(() => {
-                      console.log('Auth confirmed! Attempting to auto-star repository...');
-                      // Call handleStarRepo with skipAuthCheck = true to avoid infinite loop
-                      handleStarRepo(true);
-                    }, 500);
-                  } else {
-                    console.log('❌ Authentication failed after multiple attempts');
-                    setStarMessage({
-                      type: 'info',
-                      text: '✅ Authenticated! Please click the star button to star the repository.'
-                    });
-                  }
-
-                } catch (error) {
-                  console.error('Auto-star process error:', error);
-                  setStarMessage({
-                    type: 'info',
-                    text: '✅ Authenticated! Please click the star button to star the repository.'
-                  });
-                }
-              }, 2000); // Increased delay to 2 seconds
+              // Establish session with user data
+              establishSession(userData);
             }
 
-            if (event.data.type === 'github-auth-error') {
+            if (event.data.type === "github-auth-error") {
               popup.close();
               clearInterval(checkClosed);
 
               setStarMessage({
-                type: 'info',
-                text: '❌ GitHub authentication failed. Please try again.'
+                type: "info",
+                text: "❌ GitHub authentication failed. Please try again.",
               });
             }
 
-            window.removeEventListener('message', handleMessage);
+            window.removeEventListener("message", handleMessage);
           };
 
-          window.addEventListener('message', handleMessage);
+          window.addEventListener("message", handleMessage);
         } else {
           setStarMessage({
-            type: 'info',
-            text: '❌ Failed to initiate GitHub authentication'
+            type: "info",
+            text: "❌ Failed to initiate GitHub authentication",
           });
         }
       } catch (error) {
-        console.error('GitHub auth error:', error);
+        console.error("GitHub auth error:", error);
         setStarMessage({
-          type: 'info',
-          text: '❌ Failed to connect to authentication service'
+          type: "info",
+          text: "❌ Failed to connect to authentication service",
         });
       }
       return;
     }
 
     // User is authenticated, proceed with starring
-    console.log('User is authenticated, proceeding with starring...');
+    console.log("User is authenticated, proceeding with starring...");
     setIsStarring(true);
 
     try {
-      const endpoint = isStarred ? '/api/auth/repo/star' : '/api/auth/repo/star';
-      const method = isStarred ? 'DELETE' : 'POST';
+      const endpoint = isStarred
+        ? "/api/auth/repo/star"
+        : "/api/auth/repo/star";
+      const method = isStarred ? "DELETE" : "POST";
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: method,
-        credentials: 'include',
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -265,31 +290,32 @@ export const Footer = () => {
         setStarCount(data.starCount);
 
         setStarMessage({
-          type: 'success',
-          text: isStarred ? '⭐ Repository unstarred!' : '⭐ Repository starred successfully!'
+          type: "success",
+          text: isStarred
+            ? "⭐ Repository unstarred!"
+            : "⭐ Repository starred successfully!",
         });
 
         // Refresh star count after a short delay
         setTimeout(fetchStarCount, 2000);
       } else {
-        throw new Error(data.message || 'Failed to update star status');
+        throw new Error(data.message || "Failed to update star status");
       }
-
     } catch (error) {
-      console.error('Error starring repository:', error);
+      console.error("Error starring repository:", error);
 
-      if (error.message?.includes('Authentication')) {
+      if (error.message?.includes("Authentication")) {
         setStarMessage({
-          type: 'info',
-          text: '🔑 Authentication expired. Please sign in again.'
+          type: "info",
+          text: "🔑 Authentication expired. Please sign in again.",
         });
         // Reset auth state
         setIsAuthenticated(false);
         setUser(null);
       } else {
         setStarMessage({
-          type: 'info',
-          text: '❌ Failed to update star. Please try again.'
+          type: "info",
+          text: "❌ Failed to update star. Please try again.",
         });
       }
     } finally {
@@ -341,19 +367,19 @@ export const Footer = () => {
             disabled={isStarring}
             className={`flex items-center space-x-2 text-sm transition-all duration-300 group px-3 py-1.5 rounded-full ${
               isStarring
-                ? 'text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-wait'
+                ? "text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-wait"
                 : isStarred
-                ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 cursor-pointer'
-                : 'text-gray-600 dark:text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400 bg-gray-50 dark:bg-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 cursor-pointer'
+                  ? "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 cursor-pointer"
+                  : "text-gray-600 dark:text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400 bg-gray-50 dark:bg-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 cursor-pointer"
             }`}
             title={
               isStarring
                 ? "Processing..."
                 : !isAuthenticated
-                ? "⭐ Click to sign in with GitHub and star this repository"
-                : isStarred
-                ? "⭐ Unstar this repository"
-                : "⭐ Star this repository"
+                  ? "⭐ Click to sign in with GitHub and star this repository"
+                  : isStarred
+                    ? "⭐ Unstar this repository"
+                    : "⭐ Star this repository"
             }
           >
             {isStarring ? (
@@ -379,24 +405,34 @@ export const Footer = () => {
             ) : (
               <svg
                 className={`w-4 h-4 group-hover:scale-110 transition-transform ${
-                  isStarred ? 'text-yellow-500' : ''
+                  isStarred ? "text-yellow-500" : ""
                 }`}
-                fill={isStarred ? 'currentColor' : 'currentColor'}
+                fill={isStarred ? "currentColor" : "currentColor"}
                 viewBox="0 0 20 20"
               >
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.588 4.897a1 1 0 00.95.69h5.146c.969 0 1.371 1.24.588 1.81l-4.166 3.022a1 1 0 00-.364 1.118l1.588 4.897c.3.921-.755 1.688-1.54 1.118l-4.166-3.022a1 1 0 00-1.175 0l-4.166 3.022c-.785.57-1.84-.197-1.54-1.118l1.588-4.897a1 1 0 00-.364-1.118L2.463 10.324c-.783-.57-.38-1.81.588-1.81h5.146a1 1 0 00.95-.69l1.588-4.897z" />
               </svg>
             )}
-            <span className={`font-medium transition-all duration-500 ${
-              lastStarCount !== null && lastStarCount !== starCount
-                ? 'text-green-600 dark:text-green-400 scale-110'
-                : ''
-            }`}>
-              {isStarring ? "..." : (starCount !== null ? starCount : "...")}
+            <span
+              className={`font-medium transition-all duration-500 ${
+                lastStarCount !== null && lastStarCount !== starCount
+                  ? "text-green-600 dark:text-green-400 scale-110"
+                  : ""
+              }`}
+            >
+              {isStarring ? "..." : starCount !== null ? starCount : "..."}
             </span>
             {!isAuthenticated && !isStarring && (
-              <svg className="w-3 h-3 opacity-70" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              <svg
+                className="w-3 h-3 opacity-70"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clipRule="evenodd"
+                />
               </svg>
             )}
           </button>
@@ -466,12 +502,14 @@ export const Footer = () => {
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div
             className={`px-4 py-2 rounded-lg shadow-lg border ${
-              starMessage.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
-                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+              starMessage.type === "success"
+                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
+                : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
             } animate-in slide-in-from-bottom duration-300`}
           >
-            <p className="text-sm font-medium text-center">{starMessage.text}</p>
+            <p className="text-sm font-medium text-center">
+              {starMessage.text}
+            </p>
           </div>
         </div>
       )}

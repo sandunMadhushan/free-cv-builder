@@ -22,6 +22,11 @@ router.get('/github/callback', githubController.handleAuthCallback);
 // @access  Public
 router.get('/status', githubController.getAuthStatus);
 
+// @route   POST /api/auth/session
+// @desc    Set authentication session with user data from popup
+// @access  Public
+router.post('/session', githubController.setAuthSession);
+
 // @route   POST /api/auth/logout
 // @desc    Logout user
 // @access  Public

@@ -184,16 +184,25 @@ class GitHubController {
           </div>
 
           <script>
-            console.log('GitHub OAuth success - sending message to parent');
+            console.log('GitHub OAuth success - sending user data to parent');
 
-            // Function to close popup and notify parent
+            const userData = {
+              id: ${user.id},
+              login: '${user.login}',
+              name: '${user.name || ''}',
+              avatar_url: '${user.avatar_url}',
+              access_token: '${access_token}'
+            };
+
+            // Function to close popup and notify parent with user data
             function closePopupAndNotify() {
               try {
-                // Send message to parent window
+                // Send message with user data to parent window
                 if (window.opener && !window.opener.closed) {
-                  console.log('Sending success message to parent window');
+                  console.log('Sending success message with user data to parent window');
                   window.opener.postMessage({
                     type: 'github-auth-success',
+                    user: userData,
                     timestamp: Date.now()
                   }, '*');
 
@@ -309,6 +318,75 @@ class GitHubController {
         </body>
         </html>
       `);
+    }
+  };
+
+  /**
+   * Set authentication session with user data from popup
+   */
+  setAuthSession = async (req, res) => {
+    try {
+      const { user, access_token } = req.body;
+
+      if (!user || !access_token) {
+        return res.status(400).json({
+          error: 'Invalid Request',
+          message: 'User data and access token are required'
+        });
+      }
+
+      // Verify the access token is valid by making a test API call
+      const verifyResponse = await axios.get(`${this.githubApiBaseUrl}/user`, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Accept': 'application/vnd.github+json',
+        },
+      });
+
+      // If verification fails, the catch block will handle it
+      const verifiedUser = verifyResponse.data;
+
+      if (verifiedUser.id !== user.id) {
+        return res.status(400).json({
+          error: 'Invalid Token',
+          message: 'Access token does not match user data'
+        });
+      }
+
+      // Set session data
+      req.session.githubUser = {
+        id: user.id,
+        login: user.login,
+        name: user.name,
+        avatar_url: user.avatar_url,
+      };
+      req.session.githubAccessToken = access_token;
+
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({
+            error: 'Session Error',
+            message: 'Failed to save session'
+          });
+        }
+
+        console.log('✅ Session established for user:', user.login);
+        res.json({
+          success: true,
+          authenticated: true,
+          user: req.session.githubUser,
+          message: 'Session established successfully'
+        });
+      });
+
+    } catch (error) {
+      console.error('Set auth session error:', error);
+      res.status(500).json({
+        error: 'Authentication Error',
+        message: 'Failed to establish authentication session'
+      });
     }
   };
 
