@@ -8,6 +8,7 @@ import { generatePDF, validateCVForExport, suggestFilename } from './utils/pdfGe
 import { useCVStore } from './store/cvStore';
 import { useThemeStore } from './store/themeStore';
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { localShareService } from './utils/localShareService';
 
 function App() {
   const [isExporting, setIsExporting] = useState(false);
@@ -15,13 +16,34 @@ function App() {
   const [exportMessage, setExportMessage] = useState('');
 
   const cvData = useCVStore();
-  const { resetCV } = useCVStore();
+  const { resetCV, loadCV } = useCVStore();
   const { initializeTheme } = useThemeStore();
 
   // Initialize theme on app load
   useEffect(() => {
     initializeTheme();
   }, [initializeTheme]);
+
+  // Check for shared CV data on app load
+  useEffect(() => {
+    const sharedCV = localShareService.loadSharedCV();
+    if (sharedCV) {
+      // Load the shared CV data into the store
+      loadCV(sharedCV.data);
+
+      // Show a notification that shared CV was loaded
+      setExportStatus('success');
+      setExportMessage(`Loaded shared CV: ${sharedCV.data.personalInfo?.fullName || 'Untitled CV'}`);
+
+      // Clear the URL parameters after loading
+      setTimeout(() => {
+        localShareService.clearShareParams();
+        setTimeout(() => {
+          setExportStatus(null);
+        }, 3000);
+      }, 1000);
+    }
+  }, [loadCV]);
 
   // Define functions first
   const handleExport = async () => {
