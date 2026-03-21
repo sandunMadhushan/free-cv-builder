@@ -1,14 +1,10 @@
 import React from 'react';
 import { Button } from '../common/Button';
+import { AutoSaveStatus } from '../common/AutoSaveStatus';
 import { useCVStore } from '../../store/cvStore';
 
 export const Header = ({ onExport }) => {
   const resetCV = useCVStore((state) => state.resetCV);
-
-  const handleSave = () => {
-    // Data is auto-saved to localStorage via Zustand persist middleware
-    alert('CV saved successfully!');
-  };
 
   const handleReset = () => {
     if (window.confirm('Are you sure you want to reset all data? This cannot be undone.')) {
@@ -27,11 +23,13 @@ export const Header = ({ onExport }) => {
           </span>
         </div>
 
+        {/* Auto-save status */}
+        <div className="hidden md:block">
+          <AutoSaveStatus />
+        </div>
+
         {/* Actions */}
         <div className="flex items-center space-x-3">
-          <Button variant="secondary" size="sm" onClick={handleSave}>
-            Save
-          </Button>
           <Button variant="primary" size="sm" onClick={onExport}>
             Export PDF
           </Button>

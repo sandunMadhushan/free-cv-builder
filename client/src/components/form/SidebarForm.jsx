@@ -10,6 +10,7 @@ import { LanguagesForm } from './sections/LanguagesForm';
 import { SectionManager } from './SectionManager';
 import { Customization } from '../customization/Customization';
 import { ImportResume } from '../features/ImportResume';
+import { VersionManager } from '../features/VersionManager';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -24,6 +25,7 @@ export const SidebarForm = () => {
     { id: 'certifications', label: 'Certifications', component: CertificationsForm },
     { id: 'languages', label: 'Languages', component: LanguagesForm },
     { id: 'import', label: 'Import Resume', component: ImportResume },
+    { id: 'versions', label: 'My CVs', component: VersionManager },
     { id: 'customize', label: 'Customize', component: Customization },
     { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];
