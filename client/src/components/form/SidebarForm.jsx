@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { PersonalInfoForm } from './sections/PersonalInfoForm';
 import { ProfileForm } from './sections/ProfileForm';
 import { ExperienceForm } from './sections/ExperienceForm';
+import { EducationForm } from './sections/EducationForm';
+import { SkillsForm } from './sections/SkillsForm';
+import { SectionManager } from './SectionManager';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -10,6 +13,9 @@ export const SidebarForm = () => {
     { id: 'personal', label: 'Personal Info', component: PersonalInfoForm },
     { id: 'profile', label: 'Profile', component: ProfileForm },
     { id: 'experience', label: 'Experience', component: ExperienceForm },
+    { id: 'education', label: 'Education', component: EducationForm },
+    { id: 'skills', label: 'Skills', component: SkillsForm },
+    { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];
 
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
