@@ -1,33 +1,33 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 // Initial state
 const initialState = {
   isDark: false, // Default to light mode
-  theme: 'light', // 'light' | 'dark' | 'system'
+  theme: "light", // 'light' | 'dark' | 'system'
   previewIsDark: false, // Separate theme for CV preview
-  previewTheme: 'light', // Preview can have independent theme
+  previewTheme: "light", // Preview can have independent theme
 };
 
 // Apply theme to document
 const applyTheme = (theme) => {
   const root = window.document.documentElement;
 
-  if (theme === 'dark') {
-    root.classList.add('dark');
-    root.classList.remove('light');
+  if (theme === "dark") {
+    root.classList.add("dark");
+    root.classList.remove("light");
   } else {
-    root.classList.remove('dark');
-    root.classList.add('light');
+    root.classList.remove("dark");
+    root.classList.add("light");
   }
 
   // Force a re-render by updating a CSS custom property
-  root.style.setProperty('--theme-updated', Date.now());
+  root.style.setProperty("--theme-updated", Date.now());
 };
 
 // Get system preference
 const getSystemPreference = () => {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
 };
 
 // Create the theme store
@@ -41,62 +41,71 @@ export const useThemeStore = create(
         toggleTheme: () => {
           const state = get();
           const newIsDark = !state.isDark;
-          const newTheme = newIsDark ? 'dark' : 'light';
+          const newTheme = newIsDark ? "dark" : "light";
 
           set({
             isDark: newIsDark,
-            theme: newTheme
+            theme: newTheme,
           });
 
           applyTheme(newTheme);
 
           // Debug log to help troubleshoot
-          console.log('Theme toggled:', { newTheme, newIsDark, documentClasses: document.documentElement.classList.toString() });
+          console.log("Theme toggled:", {
+            newTheme,
+            newIsDark,
+            documentClasses: document.documentElement.classList.toString(),
+          });
         },
 
         // Toggle preview theme independently
         togglePreviewTheme: () => {
           const state = get();
           const newPreviewIsDark = !state.previewIsDark;
-          const newPreviewTheme = newPreviewIsDark ? 'dark' : 'light';
+          const newPreviewTheme = newPreviewIsDark ? "dark" : "light";
 
           set({
             previewIsDark: newPreviewIsDark,
-            previewTheme: newPreviewTheme
+            previewTheme: newPreviewTheme,
           });
 
-          console.log('Preview theme toggled:', { newPreviewTheme, newPreviewIsDark });
+          console.log("Preview theme toggled:", {
+            newPreviewTheme,
+            newPreviewIsDark,
+          });
         },
 
         // Set specific theme
         setTheme: (theme) => {
           let isDark;
 
-          if (theme === 'system') {
+          if (theme === "system") {
             isDark = getSystemPreference();
 
             // Listen for system theme changes
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const mediaQuery = window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            );
             const handleChange = () => {
               const state = get();
-              if (state.theme === 'system') {
+              if (state.theme === "system") {
                 const systemIsDark = mediaQuery.matches;
                 set({ isDark: systemIsDark });
-                applyTheme(systemIsDark ? 'dark' : 'light');
+                applyTheme(systemIsDark ? "dark" : "light");
               }
             };
 
-            mediaQuery.addEventListener('change', handleChange);
+            mediaQuery.addEventListener("change", handleChange);
           } else {
-            isDark = theme === 'dark';
+            isDark = theme === "dark";
           }
 
           set({
             theme,
-            isDark
+            isDark,
           });
 
-          applyTheme(isDark ? 'dark' : 'light');
+          applyTheme(isDark ? "dark" : "light");
         },
 
         // Initialize theme on app load
@@ -105,32 +114,34 @@ export const useThemeStore = create(
           let isDark = state.isDark;
 
           // If theme is system, detect system preference
-          if (state.theme === 'system' || state.theme === undefined) {
+          if (state.theme === "system" || state.theme === undefined) {
             isDark = getSystemPreference();
             set({
               isDark,
-              theme: 'system'
+              theme: "system",
             });
           }
 
           // Always apply the theme to ensure DOM is updated
-          applyTheme(isDark ? 'dark' : 'light');
+          applyTheme(isDark ? "dark" : "light");
 
           // Set up system theme change listener if needed
-          if (state.theme === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+          if (state.theme === "system") {
+            const mediaQuery = window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            );
             const handleChange = () => {
               const currentState = get();
-              if (currentState.theme === 'system') {
+              if (currentState.theme === "system") {
                 const systemIsDark = mediaQuery.matches;
                 set({ isDark: systemIsDark });
-                applyTheme(systemIsDark ? 'dark' : 'light');
+                applyTheme(systemIsDark ? "dark" : "light");
               }
             };
 
             // Remove existing listener if any
-            mediaQuery.removeEventListener('change', handleChange);
-            mediaQuery.addEventListener('change', handleChange);
+            mediaQuery.removeEventListener("change", handleChange);
+            mediaQuery.addEventListener("change", handleChange);
           }
         },
 
@@ -140,8 +151,8 @@ export const useThemeStore = create(
           return {
             theme: state.theme,
             isDark: state.isDark,
-            icon: state.isDark ? '🌙' : '☀️',
-            label: state.isDark ? 'Dark' : 'Light'
+            icon: state.isDark ? "🌙" : "☀️",
+            label: state.isDark ? "Dark" : "Light",
           };
         },
 
@@ -151,18 +162,18 @@ export const useThemeStore = create(
           return {
             theme: state.previewTheme,
             isDark: state.previewIsDark,
-            icon: state.previewIsDark ? '🌙' : '☀️',
-            label: state.previewIsDark ? 'Dark Preview' : 'Light Preview'
+            icon: state.previewIsDark ? "🌙" : "☀️",
+            label: state.previewIsDark ? "Dark Preview" : "Light Preview",
           };
-        }
+        },
       }),
       {
-        name: 'theme-storage',
+        name: "theme-storage",
         version: 1,
-      }
+      },
     ),
     {
-      name: 'Theme Store',
-    }
-  )
+      name: "Theme Store",
+    },
+  ),
 );

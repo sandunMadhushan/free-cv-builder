@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { Button } from '../common/Button';
-import { Input } from '../common/Input';
-import { useCVStore } from '../../store/cvStore';
-import { useVersionStore } from '../../store/versionStore';
+import React, { useState } from "react";
+import { Button } from "../common/Button";
+import { Input } from "../common/Input";
+import { useCVStore } from "../../store/cvStore";
+import { useVersionStore } from "../../store/versionStore";
 
 export const VersionManager = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
-  const [newVersionName, setNewVersionName] = useState('');
-  const [selectedVersionForRename, setSelectedVersionForRename] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [newVersionName, setNewVersionName] = useState("");
+  const [selectedVersionForRename, setSelectedVersionForRename] =
+    useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const cvData = useCVStore();
   const {
@@ -27,26 +28,35 @@ export const VersionManager = () => {
   const { loadCV } = useCVStore();
 
   // Get sorted and filtered versions
-  const sortedVersions = getSortedVersions().filter(version =>
-    version.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const sortedVersions = getSortedVersions().filter((version) =>
+    version.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSaveVersion = () => {
-    const name = newVersionName.trim() || `CV - ${new Date().toLocaleDateString()}`;
+    const name =
+      newVersionName.trim() || `CV - ${new Date().toLocaleDateString()}`;
     const versionId = saveVersion(cvData, name);
     setShowSaveModal(false);
-    setNewVersionName('');
+    setNewVersionName("");
   };
 
   const handleLoadVersion = (version) => {
-    if (window.confirm(`Load "${version.name}"? This will replace your current work.`)) {
+    if (
+      window.confirm(
+        `Load "${version.name}"? This will replace your current work.`,
+      )
+    ) {
       loadCV(version.data);
       setCurrentVersion(version.id);
     }
   };
 
   const handleDeleteVersion = (version) => {
-    if (window.confirm(`Are you sure you want to delete "${version.name}"? This cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${version.name}"? This cannot be undone.`,
+      )
+    ) {
       deleteVersion(version.id);
     }
   };
@@ -56,7 +66,7 @@ export const VersionManager = () => {
       renameVersion(selectedVersionForRename.id, newVersionName.trim());
       setShowRenameModal(false);
       setSelectedVersionForRename(null);
-      setNewVersionName('');
+      setNewVersionName("");
     }
   };
 
@@ -72,11 +82,11 @@ export const VersionManager = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString([], {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -87,15 +97,18 @@ export const VersionManager = () => {
     if (data.experience?.length) stats.push(`${data.experience.length} jobs`);
     if (data.education?.length) stats.push(`${data.education.length} degrees`);
     if (data.projects?.length) stats.push(`${data.projects.length} projects`);
-    if (data.certifications?.length) stats.push(`${data.certifications.length} certs`);
+    if (data.certifications?.length)
+      stats.push(`${data.certifications.length} certs`);
 
-    return stats.join(' • ') || 'Basic info only';
+    return stats.join(" • ") || "Basic info only";
   };
 
   return (
     <div className="space-y-6">
       <div className="border-b pb-3 mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Version Management</h2>
+        <h2 className="text-xl font-semibold text-gray-800">
+          Version Management
+        </h2>
         <p className="text-sm text-gray-600 mt-1">
           Save, load, and manage multiple versions of your CV
         </p>
@@ -103,10 +116,7 @@ export const VersionManager = () => {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          onClick={() => setShowSaveModal(true)}
-          className="flex-1"
-        >
+        <Button onClick={() => setShowSaveModal(true)} className="flex-1">
           Save Current Version
         </Button>
         <Input
@@ -121,11 +131,25 @@ export const VersionManager = () => {
       {sortedVersions.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <div className="space-y-3">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 14v20c0 4.418 7.163 8 16 8 1.381 0 2.721-.087 4-.252M8 14c0 4.418 7.163 8 16 8s16-3.582 16-8M8 14c0-4.418 7.163-8 16-8s16 3.582 16 8m0 0v14.5" />
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 48 48"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M8 14v20c0 4.418 7.163 8 16 8 1.381 0 2.721-.087 4-.252M8 14c0 4.418 7.163 8 16 8s16-3.582 16-8M8 14c0-4.418 7.163-8 16-8s16 3.582 16 8m0 0v14.5"
+              />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900">No saved versions</h3>
-            <p className="text-gray-600">Save your first CV version to get started</p>
+            <h3 className="text-lg font-medium text-gray-900">
+              No saved versions
+            </h3>
+            <p className="text-gray-600">
+              Save your first CV version to get started
+            </p>
             <Button onClick={() => setShowSaveModal(true)}>
               Save Current CV
             </Button>
@@ -138,8 +162,8 @@ export const VersionManager = () => {
               key={version.id}
               className={`border rounded-lg p-4 transition-all ${
                 currentVersionId === version.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <div className="flex items-start justify-between">
@@ -179,8 +203,18 @@ export const VersionManager = () => {
 
                   <div className="relative group">
                     <button className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 5v.01M12 12v.01M12 19v.01"
+                        />
                       </svg>
                     </button>
 
@@ -218,7 +252,9 @@ export const VersionManager = () => {
       {showSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Save CV Version</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Save CV Version
+            </h3>
 
             <Input
               label="Version Name"
@@ -233,7 +269,7 @@ export const VersionManager = () => {
                 variant="outline"
                 onClick={() => {
                   setShowSaveModal(false);
-                  setNewVersionName('');
+                  setNewVersionName("");
                 }}
                 className="flex-1"
               >
@@ -251,7 +287,9 @@ export const VersionManager = () => {
       {showRenameModal && selectedVersionForRename && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Rename Version</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Rename Version
+            </h3>
 
             <Input
               label="Version Name"
@@ -267,7 +305,7 @@ export const VersionManager = () => {
                 onClick={() => {
                   setShowRenameModal(false);
                   setSelectedVersionForRename(null);
-                  setNewVersionName('');
+                  setNewVersionName("");
                 }}
                 className="flex-1"
               >
@@ -283,11 +321,18 @@ export const VersionManager = () => {
 
       {/* Version Management Tips */}
       <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-        <h3 className="font-medium text-purple-900 mb-2">💡 Version Management Tips</h3>
+        <h3 className="font-medium text-purple-900 mb-2">
+          💡 Version Management Tips
+        </h3>
         <ul className="text-sm text-purple-700 space-y-1">
           <li>• Save versions before making major changes</li>
-          <li>• Use descriptive names like "Software Engineer Role" or "Creative Director Position"</li>
-          <li>• Duplicate and modify versions for different job applications</li>
+          <li>
+            • Use descriptive names like "Software Engineer Role" or "Creative
+            Director Position"
+          </li>
+          <li>
+            • Duplicate and modify versions for different job applications
+          </li>
           <li>• The "Current" version is automatically saved as you work</li>
         </ul>
       </div>

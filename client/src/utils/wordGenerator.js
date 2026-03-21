@@ -1,4 +1,4 @@
-import { saveAs } from 'file-saver';
+import { saveAs } from "file-saver";
 
 /**
  * Generate and download a Word document that matches the current preview exactly
@@ -7,13 +7,20 @@ import { saveAs } from 'file-saver';
  * @param {string} filename - Optional custom filename
  * @param {string} elementId - ID of the preview element to capture
  */
-export const generateWordDocument = async (cvData, customization, filename = 'resume.docx', elementId = 'cv-preview-print') => {
+export const generateWordDocument = async (
+  cvData,
+  customization,
+  filename = "resume.docx",
+  elementId = "cv-preview-print",
+) => {
   try {
     // Get the preview element that user sees
     const previewElement = document.getElementById(elementId);
 
     if (!previewElement) {
-      throw new Error('CV preview element not found. Please make sure the CV is loaded.');
+      throw new Error(
+        "CV preview element not found. Please make sure the CV is loaded.",
+      );
     }
 
     // Function to recursively capture all computed styles and apply them inline
@@ -23,39 +30,72 @@ export const generateWordDocument = async (cvData, customization, filename = 're
 
       // Important styles to preserve
       const stylesToCapture = [
-        'color', 'backgroundColor', 'fontSize', 'fontFamily', 'fontWeight',
-        'fontStyle', 'textDecoration', 'textAlign', 'lineHeight', 'margin',
-        'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
-        'padding', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight',
-        'borderColor', 'borderWidth', 'borderStyle', 'borderTop', 'borderBottom',
-        'width', 'height', 'display', 'position', 'top', 'left', 'right', 'bottom'
+        "color",
+        "backgroundColor",
+        "fontSize",
+        "fontFamily",
+        "fontWeight",
+        "fontStyle",
+        "textDecoration",
+        "textAlign",
+        "lineHeight",
+        "margin",
+        "marginTop",
+        "marginBottom",
+        "marginLeft",
+        "marginRight",
+        "padding",
+        "paddingTop",
+        "paddingBottom",
+        "paddingLeft",
+        "paddingRight",
+        "borderColor",
+        "borderWidth",
+        "borderStyle",
+        "borderTop",
+        "borderBottom",
+        "width",
+        "height",
+        "display",
+        "position",
+        "top",
+        "left",
+        "right",
+        "bottom",
       ];
 
       // Build inline style string
-      let inlineStyle = '';
-      stylesToCapture.forEach(style => {
+      let inlineStyle = "";
+      stylesToCapture.forEach((style) => {
         const value = computedStyle.getPropertyValue(style);
-        if (value && value !== 'initial' && value !== 'inherit' && value !== 'auto') {
+        if (
+          value &&
+          value !== "initial" &&
+          value !== "inherit" &&
+          value !== "auto"
+        ) {
           inlineStyle += `${style}: ${value}; `;
         }
       });
 
       // Set the inline style
       if (inlineStyle) {
-        clonedElement.setAttribute('style', inlineStyle);
+        clonedElement.setAttribute("style", inlineStyle);
       }
 
       // Recursively process child elements
-      Array.from(element.children).forEach(child => {
+      Array.from(element.children).forEach((child) => {
         const clonedChild = captureStylesRecursively(child);
         clonedElement.appendChild(clonedChild);
       });
 
       // Copy text content for text nodes
       if (element.childNodes.length > 0) {
-        Array.from(element.childNodes).forEach(node => {
+        Array.from(element.childNodes).forEach((node) => {
           if (node.nodeType === Node.TEXT_NODE) {
-            clonedElement.appendChild(document.createTextNode(node.textContent));
+            clonedElement.appendChild(
+              document.createTextNode(node.textContent),
+            );
           }
         });
       }
@@ -124,22 +164,22 @@ export const generateWordDocument = async (cvData, customization, filename = 're
 
     // Create blob with proper MIME type for Word
     const blob = new Blob([wordHTML], {
-      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
 
     // Download the file
-    saveAs(blob, filename.replace('.docx', '.doc'));
+    saveAs(blob, filename.replace(".docx", ".doc"));
 
     return {
       success: true,
-      message: 'Word document downloaded successfully! The document preserves your exact preview formatting and colors.'
+      message:
+        "Word document downloaded successfully! The document preserves your exact preview formatting and colors.",
     };
-
   } catch (error) {
-    console.error('Word Document Generation Error:', error);
+    console.error("Word Document Generation Error:", error);
     return {
       success: false,
-      message: `Failed to generate Word document: ${error.message}`
+      message: `Failed to generate Word document: ${error.message}`,
     };
   }
 };
@@ -153,13 +193,13 @@ export const suggestWordFilename = (cvData) => {
 
   if (personalInfo?.fullName) {
     const cleanName = personalInfo.fullName
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .replace(/\s+/g, "_")
       .toLowerCase();
 
-    const timestamp = new Date().toISOString().split('T')[0];
+    const timestamp = new Date().toISOString().split("T")[0];
     return `${cleanName}_resume_${timestamp}.docx`;
   }
 
-  return `resume_${new Date().toISOString().split('T')[0]}.docx`;
+  return `resume_${new Date().toISOString().split("T")[0]}.docx`;
 };

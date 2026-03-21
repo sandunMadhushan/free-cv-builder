@@ -1,16 +1,21 @@
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 
 /**
  * Generate and download high-quality visual PDF from the CV preview
  * @param {string} filename - Optional custom filename
  * @param {string} elementId - ID of the element to export (default: 'cv-preview-print')
  */
-export const generatePDF = async (filename = 'resume.pdf', elementId = 'cv-preview-print') => {
+export const generatePDF = async (
+  filename = "resume.pdf",
+  elementId = "cv-preview-print",
+) => {
   try {
     const element = document.getElementById(elementId);
 
     if (!element) {
-      throw new Error('CV preview element not found. Please make sure the CV is loaded.');
+      throw new Error(
+        "CV preview element not found. Please make sure the CV is loaded.",
+      );
     }
 
     // Configuration optimized for beautiful visual output (fixed blank PDF issue)
@@ -18,32 +23,32 @@ export const generatePDF = async (filename = 'resume.pdf', elementId = 'cv-previ
       margin: 10,
       filename: filename,
       image: {
-        type: 'jpeg',
-        quality: 0.98
+        type: "jpeg",
+        quality: 0.98,
       },
       html2canvas: {
         scale: 2,
         useCORS: true,
         letterRendering: true,
         allowTaint: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
       },
       jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      }
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      },
     };
 
     // Generate and download the PDF
     await html2pdf().set(options).from(element).save();
 
-    return { success: true, message: 'PDF downloaded successfully!' };
+    return { success: true, message: "PDF downloaded successfully!" };
   } catch (error) {
-    console.error('PDF Generation Error:', error);
+    console.error("PDF Generation Error:", error);
     return {
       success: false,
-      message: `Failed to generate PDF: ${error.message}`
+      message: `Failed to generate PDF: ${error.message}`,
     };
   }
 };
@@ -52,44 +57,47 @@ export const generatePDF = async (filename = 'resume.pdf', elementId = 'cv-previ
  * Generate PDF blob with enhanced text preservation
  * @param {string} elementId - ID of the element to export
  */
-export const generatePDFBlob = async (elementId = 'cv-preview-print') => {
+export const generatePDFBlob = async (elementId = "cv-preview-print") => {
   try {
     const element = document.getElementById(elementId);
 
     if (!element) {
-      throw new Error('CV preview element not found.');
+      throw new Error("CV preview element not found.");
     }
 
     const options = {
       margin: [10, 10, 10, 10],
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
         letterRendering: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         logging: false,
         preserveDrawingBuffer: true,
-        foreignObjectRendering: true
+        foreignObjectRendering: true,
       },
       jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
         compress: false,
-        userUnit: 1.0
-      }
+        userUnit: 1.0,
+      },
     };
 
     // Generate blob with text preservation
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    const pdfBlob = await html2pdf()
+      .set(options)
+      .from(element)
+      .outputPdf("blob");
 
     return { success: true, blob: pdfBlob };
   } catch (error) {
-    console.error('PDF Blob Generation Error:', error);
+    console.error("PDF Blob Generation Error:", error);
     return {
       success: false,
-      message: `Failed to generate PDF preview: ${error.message}`
+      message: `Failed to generate PDF preview: ${error.message}`,
     };
   }
 };
@@ -99,36 +107,44 @@ export const generatePDFBlob = async (elementId = 'cv-preview-print') => {
  * @param {Object} cvData - CV data to export
  * @param {string} filename - Filename for the PDF
  */
-export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => {
+export const generateSearchablePDF = async (
+  cvData,
+  filename = "resume.pdf",
+) => {
   try {
     // Import jsPDF for direct text-based PDF generation
-    const { jsPDF } = await import('jspdf');
+    const { jsPDF } = await import("jspdf");
 
     const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-      compress: false
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: false,
     });
 
     // Set up fonts and styling
-    pdf.setFont('helvetica');
+    pdf.setFont("helvetica");
     let yPosition = 20;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 20;
-    const maxWidth = pageWidth - (margin * 2);
+    const maxWidth = pageWidth - margin * 2;
 
     // Helper function to add text with word wrapping
-    const addText = (text, fontSize = 10, isBold = false, leftMargin = margin) => {
+    const addText = (
+      text,
+      fontSize = 10,
+      isBold = false,
+      leftMargin = margin,
+    ) => {
       if (!text) return yPosition;
 
       pdf.setFontSize(fontSize);
-      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      pdf.setFont("helvetica", isBold ? "bold" : "normal");
 
       const lines = pdf.splitTextToSize(text, maxWidth - (leftMargin - margin));
 
       // Check if we need a new page
-      if (yPosition + (lines.length * fontSize * 0.35) > 280) {
+      if (yPosition + lines.length * fontSize * 0.35 > 280) {
         pdf.addPage();
         yPosition = 20;
       }
@@ -148,9 +164,10 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
     const contactInfo = [];
     if (cvData.personalInfo?.email) contactInfo.push(cvData.personalInfo.email);
     if (cvData.personalInfo?.phone) contactInfo.push(cvData.personalInfo.phone);
-    if (cvData.personalInfo?.address) contactInfo.push(cvData.personalInfo.address);
+    if (cvData.personalInfo?.address)
+      contactInfo.push(cvData.personalInfo.address);
     if (contactInfo.length > 0) {
-      addText(contactInfo.join(' | '), 10);
+      addText(contactInfo.join(" | "), 10);
       yPosition += 3;
     }
 
@@ -160,27 +177,27 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
     if (cvData.personalInfo?.github) links.push(cvData.personalInfo.github);
     if (cvData.personalInfo?.website) links.push(cvData.personalInfo.website);
     if (links.length > 0) {
-      addText(links.join(' | '), 10);
+      addText(links.join(" | "), 10);
       yPosition += 5;
     }
 
     // Profile/Summary
     if (cvData.profile?.summary) {
-      addText('PROFESSIONAL SUMMARY', 12, true);
+      addText("PROFESSIONAL SUMMARY", 12, true);
       addText(cvData.profile.summary, 10);
       yPosition += 5;
     }
 
     // Experience
     if (cvData.experience?.length > 0) {
-      addText('EXPERIENCE', 12, true);
-      cvData.experience.forEach(exp => {
+      addText("EXPERIENCE", 12, true);
+      cvData.experience.forEach((exp) => {
         if (exp.jobTitle || exp.company) {
-          const jobHeader = `${exp.jobTitle || ''}${exp.jobTitle && exp.company ? ' at ' : ''}${exp.company || ''}`;
+          const jobHeader = `${exp.jobTitle || ""}${exp.jobTitle && exp.company ? " at " : ""}${exp.company || ""}`;
           addText(jobHeader, 10, true);
 
           if (exp.startDate || exp.endDate || exp.isPresent) {
-            const dates = `${exp.startDate || ''} - ${exp.isPresent ? 'Present' : exp.endDate || ''}`;
+            const dates = `${exp.startDate || ""} - ${exp.isPresent ? "Present" : exp.endDate || ""}`;
             addText(dates, 9);
           }
 
@@ -195,13 +212,13 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
 
     // Education
     if (cvData.education?.length > 0) {
-      addText('EDUCATION', 12, true);
-      cvData.education.forEach(edu => {
+      addText("EDUCATION", 12, true);
+      cvData.education.forEach((edu) => {
         if (edu.degree || edu.school) {
-          addText(`${edu.degree || ''} - ${edu.school || ''}`, 10, true);
+          addText(`${edu.degree || ""} - ${edu.school || ""}`, 10, true);
 
           if (edu.startDate || edu.endDate) {
-            const dates = `${edu.startDate || ''} - ${edu.endDate || ''}`;
+            const dates = `${edu.startDate || ""} - ${edu.endDate || ""}`;
             addText(dates, 9);
           }
 
@@ -217,25 +234,25 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
     // Skills
     if (cvData.skills) {
       let hasSkills = false;
-      addText('SKILLS', 12, true);
+      addText("SKILLS", 12, true);
 
       if (cvData.skills.technical?.length > 0) {
-        addText('Technical: ' + cvData.skills.technical.join(', '), 10);
+        addText("Technical: " + cvData.skills.technical.join(", "), 10);
         hasSkills = true;
       }
 
       if (cvData.skills.tools?.length > 0) {
-        addText('Tools: ' + cvData.skills.tools.join(', '), 10);
+        addText("Tools: " + cvData.skills.tools.join(", "), 10);
         hasSkills = true;
       }
 
       if (cvData.skills.soft?.length > 0) {
-        addText('Soft Skills: ' + cvData.skills.soft.join(', '), 10);
+        addText("Soft Skills: " + cvData.skills.soft.join(", "), 10);
         hasSkills = true;
       }
 
       if (cvData.skills.languages?.length > 0) {
-        addText('Languages: ' + cvData.skills.languages.join(', '), 10);
+        addText("Languages: " + cvData.skills.languages.join(", "), 10);
         hasSkills = true;
       }
 
@@ -246,8 +263,8 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
 
     // Projects
     if (cvData.projects?.length > 0) {
-      addText('PROJECTS', 12, true);
-      cvData.projects.forEach(project => {
+      addText("PROJECTS", 12, true);
+      cvData.projects.forEach((project) => {
         if (project.name) {
           addText(project.name, 10, true);
 
@@ -256,14 +273,19 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
           }
 
           if (project.technologies) {
-            addText(`Technologies: ${project.technologies}`, 9, false, margin + 5);
+            addText(
+              `Technologies: ${project.technologies}`,
+              9,
+              false,
+              margin + 5,
+            );
           }
 
           if (project.url || project.github) {
             const links = [];
             if (project.url) links.push(`Live: ${project.url}`);
             if (project.github) links.push(`GitHub: ${project.github}`);
-            addText(links.join(' | '), 9, false, margin + 5);
+            addText(links.join(" | "), 9, false, margin + 5);
           }
           yPosition += 3;
         }
@@ -273,8 +295,8 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
 
     // Certifications
     if (cvData.certifications?.length > 0) {
-      addText('CERTIFICATIONS', 12, true);
-      cvData.certifications.forEach(cert => {
+      addText("CERTIFICATIONS", 12, true);
+      cvData.certifications.forEach((cert) => {
         if (cert.name) {
           let certText = cert.name;
           if (cert.issuer) {
@@ -297,15 +319,15 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
 
     // Languages
     if (cvData.languages?.length > 0) {
-      addText('LANGUAGES', 12, true);
-      const langList = cvData.languages.map(lang => {
+      addText("LANGUAGES", 12, true);
+      const langList = cvData.languages.map((lang) => {
         let langText = lang.name || lang;
-        if (lang.proficiency && typeof lang === 'object') {
+        if (lang.proficiency && typeof lang === "object") {
           langText += ` (${lang.proficiency})`;
         }
         return langText;
       });
-      addText(langList.join(', '), 10);
+      addText(langList.join(", "), 10);
       yPosition += 2;
     }
 
@@ -314,13 +336,14 @@ export const generateSearchablePDF = async (cvData, filename = 'resume.pdf') => 
 
     return {
       success: true,
-      message: 'Searchable PDF downloaded successfully! This PDF can be imported back into the CV Builder.'
+      message:
+        "Searchable PDF downloaded successfully! This PDF can be imported back into the CV Builder.",
     };
   } catch (error) {
-    console.error('Searchable PDF Generation Error:', error);
+    console.error("Searchable PDF Generation Error:", error);
     return {
       success: false,
-      message: `Failed to generate searchable PDF: ${error.message}`
+      message: `Failed to generate searchable PDF: ${error.message}`,
     };
   }
 };
@@ -335,29 +358,30 @@ export const validateCVForExport = (cvData) => {
   const issues = [];
 
   // Check for essential personal info
-  if (!personalInfo?.fullName || personalInfo.fullName.trim() === '') {
-    issues.push('Full name is required');
+  if (!personalInfo?.fullName || personalInfo.fullName.trim() === "") {
+    issues.push("Full name is required");
   }
 
-  if (!personalInfo?.email || personalInfo.email.trim() === '') {
-    issues.push('Email address is required');
+  if (!personalInfo?.email || personalInfo.email.trim() === "") {
+    issues.push("Email address is required");
   }
 
   // Check for at least one main section
-  const hasContent = (
+  const hasContent =
     (profile?.summary && profile.summary.trim()) ||
     (experience && experience.length > 0) ||
     (education && education.length > 0) ||
-    (skills && (skills.technical?.length > 0 || skills.tools?.length > 0))
-  );
+    (skills && (skills.technical?.length > 0 || skills.tools?.length > 0));
 
   if (!hasContent) {
-    issues.push('Please add some content (profile summary, experience, education, or skills)');
+    issues.push(
+      "Please add some content (profile summary, experience, education, or skills)",
+    );
   }
 
   return {
     isValid: issues.length === 0,
-    issues: issues
+    issues: issues,
   };
 };
 
@@ -371,14 +395,14 @@ export const suggestFilename = (cvData) => {
   if (personalInfo?.fullName) {
     // Clean up name for filename (remove special characters)
     const cleanName = personalInfo.fullName
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .replace(/\s+/g, "_")
       .toLowerCase();
 
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
     return `${cleanName}_resume_${timestamp}.pdf`;
   }
 
-  return `resume_${new Date().toISOString().split('T')[0]}.pdf`;
+  return `resume_${new Date().toISOString().split("T")[0]}.pdf`;
 };

@@ -1,27 +1,31 @@
-import React, { useState } from 'react';
-import { TemplateSelector } from './TemplateSelector';
-import { ColorCustomizer } from './ColorCustomizer';
-import { FontCustomizer } from './FontCustomizer';
-import { TypographyCustomizer } from './TypographyCustomizer';
-import { SectionReorder } from './SectionReorder';
+import React, { useState } from "react";
+import { TemplateSelector } from "./TemplateSelector";
+import { ColorCustomizer } from "./ColorCustomizer";
+import { FontCustomizer } from "./FontCustomizer";
+import { TypographyCustomizer } from "./TypographyCustomizer";
+import { SectionReorder } from "./SectionReorder";
 
 export const Customization = () => {
-  const [activeSection, setActiveSection] = useState('templates');
+  const [activeSection, setActiveSection] = useState("templates");
 
   const sections = [
-    { id: 'templates', label: 'Templates', component: TemplateSelector },
-    { id: 'colors', label: 'Colors', component: ColorCustomizer },
-    { id: 'fonts', label: 'Fonts', component: FontCustomizer },
-    { id: 'typography', label: 'Typography', component: TypographyCustomizer },
-    { id: 'reorder', label: 'Section Order', component: SectionReorder },
+    { id: "templates", label: "Templates", component: TemplateSelector },
+    { id: "colors", label: "Colors", component: ColorCustomizer },
+    { id: "fonts", label: "Fonts", component: FontCustomizer },
+    { id: "typography", label: "Typography", component: TypographyCustomizer },
+    { id: "reorder", label: "Section Order", component: SectionReorder },
   ];
 
-  const ActiveComponent = sections.find(section => section.id === activeSection)?.component;
+  const ActiveComponent = sections.find(
+    (section) => section.id === activeSection,
+  )?.component;
 
   return (
     <div className="space-y-4">
       <div className="border-b pb-3 mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Customize Your CV</h2>
+        <h2 className="text-xl font-semibold text-gray-800">
+          Customize Your CV
+        </h2>
         <p className="text-sm text-gray-600 mt-1">
           Personalize your CV template and styling
         </p>
@@ -35,9 +39,10 @@ export const Customization = () => {
             onClick={() => setActiveSection(section.id)}
             className={`
               px-4 py-2 text-sm font-medium transition-colors
-              ${activeSection === section.id
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
+              ${
+                activeSection === section.id
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-800"
               }
             `}
           >
@@ -47,9 +52,7 @@ export const Customization = () => {
       </div>
 
       {/* Active Section Component */}
-      <div>
-        {ActiveComponent && <ActiveComponent />}
-      </div>
+      <div>{ActiveComponent && <ActiveComponent />}</div>
     </div>
   );
 };

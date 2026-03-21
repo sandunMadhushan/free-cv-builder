@@ -1,9 +1,9 @@
 // Local sharing service that works without backend
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
 class LocalShareService {
   constructor() {
-    this.storageKey = 'cv-shares';
+    this.storageKey = "cv-shares";
   }
 
   // Generate a shareable URL with CV data and styling encoded
@@ -20,7 +20,7 @@ class LocalShareService {
         cv: cleanCVData,
         theme: themeData,
         template: templateData,
-        version: '1.0'
+        version: "1.0",
       };
 
       // Compress and encode complete package
@@ -34,10 +34,10 @@ class LocalShareService {
       this.saveShareInfo(shareId, {
         id: shareId,
         createdAt: new Date().toISOString(),
-        title: cleanCVData.personalInfo?.fullName || 'Untitled CV',
+        title: cleanCVData.personalInfo?.fullName || "Untitled CV",
         shareUrl: shareUrl,
         hasTheme: Object.keys(themeData).length > 0,
-        hasTemplate: Object.keys(templateData).length > 0
+        hasTemplate: Object.keys(templateData).length > 0,
       });
 
       return {
@@ -45,14 +45,14 @@ class LocalShareService {
         data: {
           shareId: shareId,
           shareUrl: shareUrl,
-          createdAt: new Date().toISOString()
-        }
+          createdAt: new Date().toISOString(),
+        },
       };
     } catch (error) {
-      console.error('Failed to generate share link:', error);
+      console.error("Failed to generate share link:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -72,14 +72,17 @@ class LocalShareService {
       certifications: cleaned.certifications || [],
       languages: cleaned.languages || [],
       activeSections: cleaned.activeSections || {},
-      sectionOrder: cleaned.sectionOrder || []
+      sectionOrder: cleaned.sectionOrder || [],
     };
 
     // Filter out empty arrays and objects
-    Object.keys(dataOnly).forEach(key => {
+    Object.keys(dataOnly).forEach((key) => {
       if (Array.isArray(dataOnly[key]) && dataOnly[key].length === 0) {
         delete dataOnly[key];
-      } else if (typeof dataOnly[key] === 'object' && Object.keys(dataOnly[key]).length === 0) {
+      } else if (
+        typeof dataOnly[key] === "object" &&
+        Object.keys(dataOnly[key]).length === 0
+      ) {
         delete dataOnly[key];
       }
     });
@@ -99,7 +102,7 @@ class LocalShareService {
       // Use base64 encoding
       return btoa(encodeURIComponent(jsonString));
     } catch (error) {
-      throw new Error('Failed to encode share data');
+      throw new Error("Failed to encode share data");
     }
   }
 
@@ -114,7 +117,7 @@ class LocalShareService {
       const jsonString = decodeURIComponent(atob(encodedData));
       return JSON.parse(jsonString);
     } catch (error) {
-      throw new Error('Failed to decode share data');
+      throw new Error("Failed to decode share data");
     }
   }
 
@@ -122,8 +125,8 @@ class LocalShareService {
   loadSharedCV() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const shareId = urlParams.get('share');
-      const encodedData = urlParams.get('data');
+      const shareId = urlParams.get("share");
+      const encodedData = urlParams.get("data");
 
       if (!shareId || !encodedData) {
         return null;
@@ -139,18 +142,18 @@ class LocalShareService {
           data: {
             cv: sharePackage,
             theme: {},
-            template: {}
-          }
+            template: {},
+          },
         };
       }
 
       // New format - complete package
       return {
         shareId: shareId,
-        data: sharePackage
+        data: sharePackage,
       };
     } catch (error) {
-      console.error('Failed to load shared CV:', error);
+      console.error("Failed to load shared CV:", error);
       return null;
     }
   }
@@ -162,7 +165,7 @@ class LocalShareService {
       shares[shareId] = shareInfo;
       localStorage.setItem(this.storageKey, JSON.stringify(shares));
     } catch (error) {
-      console.error('Failed to save share info:', error);
+      console.error("Failed to save share info:", error);
     }
   }
 
@@ -172,7 +175,7 @@ class LocalShareService {
       const shares = localStorage.getItem(this.storageKey);
       return shares ? JSON.parse(shares) : {};
     } catch (error) {
-      console.error('Failed to get shares:', error);
+      console.error("Failed to get shares:", error);
       return {};
     }
   }
@@ -185,7 +188,7 @@ class LocalShareService {
       localStorage.setItem(this.storageKey, JSON.stringify(shares));
       return { success: true };
     } catch (error) {
-      console.error('Failed to remove share:', error);
+      console.error("Failed to remove share:", error);
       return { success: false, error: error.message };
     }
   }
@@ -196,7 +199,7 @@ class LocalShareService {
       const shares = this.getShares();
       return shares[shareId] || null;
     } catch (error) {
-      console.error('Failed to get share:', error);
+      console.error("Failed to get share:", error);
       return null;
     }
   }
@@ -209,18 +212,18 @@ class LocalShareService {
     } catch (error) {
       // Fallback for older browsers
       try {
-        const textArea = document.createElement('textarea');
+        const textArea = document.createElement("textarea");
         textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        document.execCommand("copy");
         document.body.removeChild(textArea);
         return { success: true };
       } catch (fallbackError) {
-        return { success: false, error: 'Failed to copy to clipboard' };
+        return { success: false, error: "Failed to copy to clipboard" };
       }
     }
   }
@@ -233,14 +236,14 @@ class LocalShareService {
   // Check if current URL is a shared CV
   isSharedCV() {
     const urlParams = new URLSearchParams(window.location.search);
-    return !!(urlParams.get('share') && urlParams.get('data'));
+    return !!(urlParams.get("share") && urlParams.get("data"));
   }
 
   // Clear URL parameters after loading shared CV
   clearShareParams() {
     const url = new URL(window.location);
-    url.searchParams.delete('share');
-    url.searchParams.delete('data');
+    url.searchParams.delete("share");
+    url.searchParams.delete("data");
     window.history.replaceState({}, document.title, url.pathname);
   }
 }

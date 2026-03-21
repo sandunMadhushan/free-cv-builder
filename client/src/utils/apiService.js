@@ -1,6 +1,7 @@
 // API service for communicating with the CV Builder backend
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 class APIService {
   constructor() {
@@ -11,7 +12,7 @@ class APIService {
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       ...options,
     };
@@ -26,15 +27,15 @@ class APIService {
 
       return data;
     } catch (error) {
-      console.error('API Request failed:', error);
+      console.error("API Request failed:", error);
       throw error;
     }
   }
 
   // CV Management
   async saveCV(cvData) {
-    return this.request('/cv', {
-      method: 'POST',
+    return this.request("/cv", {
+      method: "POST",
       body: JSON.stringify(cvData),
     });
   }
@@ -45,27 +46,27 @@ class APIService {
 
   async updateCV(id, cvData) {
     return this.request(`/cv/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(cvData),
     });
   }
 
   async deleteCV(id) {
     return this.request(`/cv/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   // Sharing
   async makePublic(id) {
     return this.request(`/cv/${id}/public`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
   async makePrivate(id) {
     return this.request(`/cv/${id}/private`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
@@ -80,7 +81,9 @@ class APIService {
   // Health check
   async healthCheck() {
     try {
-      const response = await fetch(`${this.baseURL.replace('/api', '')}/health`);
+      const response = await fetch(
+        `${this.baseURL.replace("/api", "")}/health`,
+      );
       return response.ok;
     } catch {
       return false;

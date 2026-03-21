@@ -1,22 +1,23 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 // Generate unique IDs for list items
-const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () =>
+  `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 // Initial state
 const initialState = {
   personalInfo: {
-    fullName: '',
-    email: '',
-    phone: '',
-    location: '',
-    linkedin: '',
-    github: '',
-    website: '',
+    fullName: "",
+    email: "",
+    phone: "",
+    location: "",
+    linkedin: "",
+    github: "",
+    website: "",
   },
   profile: {
-    summary: '',
+    summary: "",
   },
   experience: [],
   education: [],
@@ -29,7 +30,16 @@ const initialState = {
   projects: [],
   certifications: [],
   languages: [],
-  sectionOrder: ['personalInfo', 'profile', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'],
+  sectionOrder: [
+    "personalInfo",
+    "profile",
+    "experience",
+    "education",
+    "skills",
+    "projects",
+    "certifications",
+    "languages",
+  ],
   activeSections: {
     personalInfo: true,
     profile: true,
@@ -68,13 +78,13 @@ export const useCVStore = create(
               ...state.experience,
               {
                 id: generateId(),
-                company: '',
-                position: '',
-                location: '',
-                startDate: '',
-                endDate: '',
+                company: "",
+                position: "",
+                location: "",
+                startDate: "",
+                endDate: "",
                 current: false,
-                description: '',
+                description: "",
                 highlights: [],
               },
             ],
@@ -83,7 +93,7 @@ export const useCVStore = create(
         updateExperience: (id, data) =>
           set((state) => ({
             experience: state.experience.map((exp) =>
-              exp.id === id ? { ...exp, ...data } : exp
+              exp.id === id ? { ...exp, ...data } : exp,
             ),
           })),
 
@@ -99,13 +109,13 @@ export const useCVStore = create(
               ...state.education,
               {
                 id: generateId(),
-                institution: '',
-                degree: '',
-                field: '',
-                location: '',
-                startDate: '',
-                endDate: '',
-                gpa: '',
+                institution: "",
+                degree: "",
+                field: "",
+                location: "",
+                startDate: "",
+                endDate: "",
+                gpa: "",
                 achievements: [],
               },
             ],
@@ -114,7 +124,7 @@ export const useCVStore = create(
         updateEducation: (id, data) =>
           set((state) => ({
             education: state.education.map((edu) =>
-              edu.id === id ? { ...edu, ...data } : edu
+              edu.id === id ? { ...edu, ...data } : edu,
             ),
           })),
 
@@ -136,12 +146,12 @@ export const useCVStore = create(
               ...state.projects,
               {
                 id: generateId(),
-                name: '',
-                description: '',
+                name: "",
+                description: "",
                 technologies: [],
-                link: '',
-                startDate: '',
-                endDate: '',
+                link: "",
+                startDate: "",
+                endDate: "",
               },
             ],
           })),
@@ -149,7 +159,7 @@ export const useCVStore = create(
         updateProject: (id, data) =>
           set((state) => ({
             projects: state.projects.map((proj) =>
-              proj.id === id ? { ...proj, ...data } : proj
+              proj.id === id ? { ...proj, ...data } : proj,
             ),
           })),
 
@@ -165,12 +175,12 @@ export const useCVStore = create(
               ...state.certifications,
               {
                 id: generateId(),
-                name: '',
-                issuer: '',
-                date: '',
-                expiryDate: '',
-                credentialId: '',
-                link: '',
+                name: "",
+                issuer: "",
+                date: "",
+                expiryDate: "",
+                credentialId: "",
+                link: "",
               },
             ],
           })),
@@ -178,13 +188,15 @@ export const useCVStore = create(
         updateCertification: (id, data) =>
           set((state) => ({
             certifications: state.certifications.map((cert) =>
-              cert.id === id ? { ...cert, ...data } : cert
+              cert.id === id ? { ...cert, ...data } : cert,
             ),
           })),
 
         removeCertification: (id) =>
           set((state) => ({
-            certifications: state.certifications.filter((cert) => cert.id !== id),
+            certifications: state.certifications.filter(
+              (cert) => cert.id !== id,
+            ),
           })),
 
         // Languages actions
@@ -194,8 +206,8 @@ export const useCVStore = create(
               ...state.languages,
               {
                 id: generateId(),
-                name: '',
-                proficiency: 'Intermediate',
+                name: "",
+                proficiency: "Intermediate",
               },
             ],
           })),
@@ -203,7 +215,7 @@ export const useCVStore = create(
         updateLanguage: (id, data) =>
           set((state) => ({
             languages: state.languages.map((lang) =>
-              lang.id === id ? { ...lang, ...data } : lang
+              lang.id === id ? { ...lang, ...data } : lang,
             ),
           })),
 
@@ -233,12 +245,12 @@ export const useCVStore = create(
         loadCV: (data) => set(data),
       }),
       {
-        name: 'cv-storage', // localStorage key
+        name: "cv-storage", // localStorage key
         version: 1,
-      }
+      },
     ),
     {
-      name: 'CV Store',
-    }
-  )
+      name: "CV Store",
+    },
+  ),
 );

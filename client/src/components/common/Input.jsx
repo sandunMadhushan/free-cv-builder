@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 
 export const Input = ({
   label,
-  type = 'text',
+  type = "text",
   value,
   onChange,
   placeholder,
   required = false,
   error,
-  className = '',
+  className = "",
   ...props
 }) => {
   return (
@@ -31,12 +31,14 @@ export const Input = ({
           focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
           focus:border-transparent transition duration-150 ease-in-out
           touch-manipulation text-base lg:text-sm
-          ${error ? 'border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400' : ''}
+          ${error ? "border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400" : ""}
           ${className}
         `}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
     </div>
   );
 };

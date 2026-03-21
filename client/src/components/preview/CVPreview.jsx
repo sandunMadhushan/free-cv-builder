@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { useCVStore } from '../../store/cvStore';
-import { useTemplateStore } from '../../store/templateStore';
-import { useThemeStore } from '../../store/themeStore';
-import { ModernTemplate } from './templates/ModernTemplate';
-import { ClassicTemplate } from './templates/ClassicTemplate';
-import { MinimalTemplate } from './templates/MinimalTemplate';
+import React, { useMemo } from "react";
+import { useCVStore } from "../../store/cvStore";
+import { useTemplateStore } from "../../store/templateStore";
+import { useThemeStore } from "../../store/themeStore";
+import { ModernTemplate } from "./templates/ModernTemplate";
+import { ClassicTemplate } from "./templates/ClassicTemplate";
+import { MinimalTemplate } from "./templates/MinimalTemplate";
 // Temporarily hidden - import { PreviewThemeToggle } from '../common/PreviewThemeToggle';
 
 export const CVPreview = () => {
@@ -28,39 +28,46 @@ export const CVPreview = () => {
   const previewIsDark = useThemeStore((state) => state.previewIsDark);
 
   // Memoize the cvData object to prevent unnecessary re-renders
-  const cvData = useMemo(() => ({
-    personalInfo,
-    profile,
-    experience,
-    education,
-    skills,
-    projects,
-    certifications,
-    languages,
-    sectionOrder,
-    activeSections,
-  }), [
-    personalInfo,
-    profile,
-    experience,
-    education,
-    skills,
-    projects,
-    certifications,
-    languages,
-    sectionOrder,
-    activeSections,
-  ]);
+  const cvData = useMemo(
+    () => ({
+      personalInfo,
+      profile,
+      experience,
+      education,
+      skills,
+      projects,
+      certifications,
+      languages,
+      sectionOrder,
+      activeSections,
+    }),
+    [
+      personalInfo,
+      profile,
+      experience,
+      education,
+      skills,
+      projects,
+      certifications,
+      languages,
+      sectionOrder,
+      activeSections,
+    ],
+  );
 
   // Template rendering logic
   const renderTemplate = () => {
     switch (selectedTemplate) {
-      case 'modern':
+      case "modern":
         return <ModernTemplate cvData={cvData} customization={customization} />;
-      case 'classic':
-        return <ClassicTemplate cvData={cvData} customization={customization} />;
-      case 'minimal':
-        return <MinimalTemplate cvData={cvData} customization={customization} />;
+      case "classic":
+        return (
+          <ClassicTemplate cvData={cvData} customization={customization} />
+        );
+      case "minimal":
+        return (
+          <MinimalTemplate cvData={cvData} customization={customization} />
+        );
       default:
         return <ModernTemplate cvData={cvData} customization={customization} />;
     }
@@ -74,10 +81,10 @@ export const CVPreview = () => {
       </div> */}
 
       {/* CV Preview with independent theme */}
-      <div className={`flex justify-center flex-1 ${previewIsDark ? 'dark' : ''}`}>
-        <div className="w-full flex justify-center">
-          {renderTemplate()}
-        </div>
+      <div
+        className={`flex justify-center flex-1 ${previewIsDark ? "dark" : ""}`}
+      >
+        <div className="w-full flex justify-center">{renderTemplate()}</div>
       </div>
     </div>
   );

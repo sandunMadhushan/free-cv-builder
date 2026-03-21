@@ -7,12 +7,14 @@ A modern, professional CV Builder application built with React, featuring real-t
 ## ✨ Features
 
 ### 🎨 **Professional Templates**
+
 - **Modern Template**: Clean, contemporary design with color customization
 - **Classic Template**: Traditional, professional layout with elegant typography
 - **Minimal Template**: Two-column sidebar layout with compact information display
 - All templates are **ATS-friendly** and optimized for applicant tracking systems
 
 ### 📝 **Comprehensive CV Sections**
+
 - **Personal Information**: Contact details, social links, professional profiles
 - **Professional Summary**: Compelling profile summary and career objectives
 - **Work Experience**: Detailed employment history with descriptions and achievements
@@ -23,6 +25,7 @@ A modern, professional CV Builder application built with React, featuring real-t
 - **Languages**: Language proficiency levels and multilingual capabilities
 
 ### 🚀 **Advanced Features**
+
 - **Real-time Live Preview**: See changes instantly as you type (300ms debounce)
 - **Dark Mode Support**: Toggle between light and dark themes with system detection
 - **Mobile Responsive**: Optimized for mobile devices with touch-friendly interface
@@ -41,6 +44,7 @@ A modern, professional CV Builder application built with React, featuring real-t
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 19** with Vite for fast development and builds
 - **Tailwind CSS** for responsive, utility-first styling with dark mode
 - **Zustand** for lightweight, performant state management
@@ -48,6 +52,7 @@ A modern, professional CV Builder application built with React, featuring real-t
 - **html2pdf.js** for client-side PDF generation
 
 ### Backend
+
 - **Node.js** with Express.js for robust API server
 - **MongoDB** with Mongoose for flexible data storage
 - **Joi** for comprehensive request validation
@@ -55,6 +60,7 @@ A modern, professional CV Builder application built with React, featuring real-t
 - **CORS** for cross-origin resource sharing
 
 ### Development Tools
+
 - **ESLint** for code quality and consistency
 - **PostCSS** with Autoprefixer for CSS optimization
 - **Nodemon** for automatic server restarts during development
@@ -62,6 +68,7 @@ A modern, professional CV Builder application built with React, featuring real-t
 ## 🚦 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - MongoDB (local installation or cloud instance)
 - Git for version control
@@ -69,12 +76,14 @@ A modern, professional CV Builder application built with React, featuring real-t
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/cv-builder.git
 cd cv-builder
 ```
 
 2. **Install dependencies**
+
 ```bash
 # Install root dependencies
 npm install
@@ -89,6 +98,7 @@ npm install
 ```
 
 3. **Environment Setup**
+
 ```bash
 # Copy environment variables
 cd server
@@ -101,6 +111,7 @@ cp .env.example .env
 ```
 
 4. **Start MongoDB**
+
 ```bash
 # Local MongoDB
 mongod
@@ -110,6 +121,7 @@ mongod
 ```
 
 5. **Run the application**
+
 ```bash
 # Terminal 1: Start the backend server
 cd server
@@ -121,11 +133,12 @@ npm run dev
 ```
 
 6. **Open your browser**
-Navigate to `http://localhost:5173` to use the CV Builder!
+   Navigate to `http://localhost:5173` to use the CV Builder!
 
 ## 📱 Usage
 
 ### Creating Your CV
+
 1. **Start with Personal Info**: Add your name, email, phone, and professional links
 2. **Write a Summary**: Craft a compelling professional summary
 3. **Add Experience**: Detail your work history with descriptions and achievements
@@ -136,6 +149,7 @@ Navigate to `http://localhost:5173` to use the CV Builder!
 8. **Language Proficiency**: List languages and proficiency levels
 
 ### Customization
+
 - **Templates**: Switch between Modern, Classic, and Minimal designs
 - **Colors**: Choose custom primary and accent colors
 - **Fonts**: Select from Inter, Open Sans, Roboto, Lato, or Georgia
@@ -143,12 +157,14 @@ Navigate to `http://localhost:5173` to use the CV Builder!
 - **Sections**: Reorder sections with drag & drop, show/hide as needed
 
 ### Sharing & Export
+
 - **PDF Export**: Download high-quality PDF files (Ctrl+P)
 - **Cloud Sync**: Save to cloud for access across devices
 - **Share Links**: Generate public URLs for easy sharing
 - **Version Management**: Save multiple CV versions for different roles
 
 ### Keyboard Shortcuts
+
 - `Ctrl + P` or `Ctrl + E`: Export PDF
 - `Ctrl + S`: Manual save (auto-save enabled)
 - `Ctrl + Shift + R`: Reset all data
@@ -192,24 +208,28 @@ cv-builder/
 ## 🌐 API Documentation
 
 ### CV Management
+
 - `POST /api/cv` - Create new CV
 - `GET /api/cv/:id` - Retrieve CV by ID
 - `PUT /api/cv/:id` - Update existing CV
 - `DELETE /api/cv/:id` - Delete CV
 
 ### Sharing
+
 - `POST /api/cv/:id/public` - Make CV publicly shareable
 - `POST /api/cv/:id/private` - Make CV private
 - `GET /api/share/:shareId` - Get public CV by share ID
 - `GET /api/cv/:id/analytics` - Get CV view analytics
 
 ### Health & Status
+
 - `GET /health` - Server health check
 - `GET /` - API information and endpoints
 
 ## 🚀 Deployment
 
 ### Frontend (Netlify)
+
 ```bash
 cd client
 npm run build
@@ -217,6 +237,7 @@ npm run build
 ```
 
 ### Backend (Railway/Heroku)
+
 ```bash
 cd server
 # Set environment variables in hosting dashboard
@@ -224,6 +245,7 @@ cd server
 ```
 
 ### Environment Variables
+
 ```env
 # Production Backend
 NODE_ENV=production

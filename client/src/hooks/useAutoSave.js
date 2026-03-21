@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useCVStore } from '../store/cvStore';
+import { useEffect, useState } from "react";
+import { useCVStore } from "../store/cvStore";
 
 /**
  * Hook to track auto-save status and provide visual feedback
@@ -19,7 +19,7 @@ export const useAutoSave = () => {
     const saveTimer = setTimeout(() => {
       setIsSaving(false);
       setLastSaved(new Date());
-      setSaveCount(prev => prev + 1);
+      setSaveCount((prev) => prev + 1);
     }, 500); // Show saving for 500ms
 
     return () => clearTimeout(saveTimer);
@@ -38,7 +38,7 @@ export const useAutoSave = () => {
 
   // Format last saved time
   const getLastSavedText = () => {
-    if (!lastSaved) return 'Not saved yet';
+    if (!lastSaved) return "Not saved yet";
 
     const now = new Date();
     const diffMs = now - lastSaved;
@@ -46,15 +46,15 @@ export const useAutoSave = () => {
     const diffMinutes = Math.floor(diffSeconds / 60);
 
     if (diffSeconds < 10) {
-      return 'Saved just now';
+      return "Saved just now";
     } else if (diffSeconds < 60) {
       return `Saved ${diffSeconds}s ago`;
     } else if (diffMinutes < 60) {
       return `Saved ${diffMinutes}m ago`;
     } else {
       return lastSaved.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
+        hour: "2-digit",
+        minute: "2-digit",
       });
     }
   };

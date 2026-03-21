@@ -1,0 +1,98 @@
+/* Preview theme isolation - overrides global dark mode when needed */
+
+/* Force light mode for preview regardless of global theme */
+.cv-preview-light {
+  background-color: rgb(249 250 251) !important; /* bg-gray-50 */
+  color: rgb(17 24 39) !important; /* text-gray-900 */
+}
+
+.cv-preview-light .bg-white {
+  background-color: rgb(255 255 255) !important;
+}
+
+.cv-preview-light .text-gray-900,
+.cv-preview-light .dark\:text-gray-100 {
+  color: rgb(17 24 39) !important;
+}
+
+.cv-preview-light .text-gray-700,
+.cv-preview-light .dark\:text-gray-200 {
+  color: rgb(55 65 81) !important;
+}
+
+.cv-preview-light .text-gray-600,
+.cv-preview-light .dark\:text-gray-300 {
+  color: rgb(75 85 99) !important;
+}
+
+.cv-preview-light .text-gray-500,
+.cv-preview-light .dark\:text-gray-400 {
+  color: rgb(107 114 128) !important;
+}
+
+.cv-preview-light .bg-gray-100,
+.cv-preview-light .dark\:bg-gray-700 {
+  background-color: rgb(243 244 246) !important;
+}
+
+.cv-preview-light .bg-gray-50,
+.cv-preview-light .dark\:bg-gray-800 {
+  background-color: rgb(249 250 251) !important;
+}
+
+/* Force dark mode for preview when explicitly set */
+.cv-preview-dark {
+  background-color: rgb(31 41 55) !important; /* bg-gray-800 */
+  color: rgb(243 244 246) !important; /* text-gray-100 */
+}
+
+.cv-preview-dark .bg-white {
+  background-color: rgb(31 41 55) !important; /* dark:bg-gray-800 */
+}
+
+.cv-preview-dark .text-gray-900 {
+  color: rgb(243 244 246) !important; /* dark:text-gray-100 */
+}
+
+.cv-preview-dark .text-gray-700 {
+  color: rgb(209 213 219) !important; /* dark:text-gray-200 */
+}
+
+.cv-preview-dark .text-gray-600 {
+  color: rgb(156 163 175) !important; /* dark:text-gray-300 */
+}
+
+.cv-preview-dark .text-gray-500 {
+  color: rgb(156 163 175) !important; /* dark:text-gray-400 */
+}
+
+.cv-preview-dark .bg-gray-100 {
+  background-color: rgb(55 65 81) !important; /* dark:bg-gray-700 */
+}
+
+.cv-preview-dark .bg-gray-50 {
+  background-color: rgb(31 41 55) !important; /* dark:bg-gray-800 */
+}
+
+/* Ensure all child elements inherit the forced colors */
+.cv-preview-light *,
+.cv-preview-dark * {
+  color: inherit !important;
+}
+
+/* Override Tailwind's dark mode selectors when in preview light mode */
+.cv-preview-light .dark\:bg-gray-800 {
+  background-color: rgb(255 255 255) !important;
+}
+
+.cv-preview-light .dark\:bg-gray-700 {
+  background-color: rgb(243 244 246) !important;
+}
+
+.cv-preview-light .border-gray-200 {
+  border-color: rgb(229 231 235) !important;
+}
+
+.cv-preview-light .dark\:border-gray-700 {
+  border-color: rgb(229 231 235) !important;
+}

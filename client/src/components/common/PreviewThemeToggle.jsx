@@ -1,8 +1,9 @@
-import React from 'react';
-import { useThemeStore } from '../../store/themeStore';
+import React from "react";
+import { useThemeStore } from "../../store/themeStore";
 
-export const PreviewThemeToggle = ({ className = '' }) => {
-  const { previewIsDark, togglePreviewTheme, getPreviewThemeInfo } = useThemeStore();
+export const PreviewThemeToggle = ({ className = "" }) => {
+  const { previewIsDark, togglePreviewTheme, getPreviewThemeInfo } =
+    useThemeStore();
   const previewThemeInfo = getPreviewThemeInfo();
 
   return (
@@ -16,14 +17,16 @@ export const PreviewThemeToggle = ({ className = '' }) => {
         dark:focus:ring-offset-gray-800 border border-gray-200 dark:border-gray-600
         ${className}
       `}
-      title={`Switch preview to ${previewIsDark ? 'light' : 'dark'} mode`}
-      aria-label={`Switch preview to ${previewIsDark ? 'light' : 'dark'} mode`}
+      title={`Switch preview to ${previewIsDark ? "light" : "dark"} mode`}
+      aria-label={`Switch preview to ${previewIsDark ? "light" : "dark"} mode`}
     >
       <div className="relative w-5 h-5 transition-transform duration-300">
         {/* Sun Icon */}
         <svg
           className={`absolute inset-0 w-5 h-5 text-yellow-500 transition-all duration-300 ${
-            previewIsDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
+            previewIsDark
+              ? "rotate-90 scale-0 opacity-0"
+              : "rotate-0 scale-100 opacity-100"
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -39,7 +42,9 @@ export const PreviewThemeToggle = ({ className = '' }) => {
         {/* Moon Icon */}
         <svg
           className={`absolute inset-0 w-5 h-5 text-blue-400 transition-all duration-300 ${
-            previewIsDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
+            previewIsDark
+              ? "rotate-0 scale-100 opacity-100"
+              : "-rotate-90 scale-0 opacity-0"
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ShareManager } from '../features/ShareManager';
+import React from "react";
+import { ShareManager } from "../features/ShareManager";
 
 export const ShareOverlay = ({ isOpen, onClose }) => {
   return (
@@ -17,7 +17,7 @@ export const ShareOverlay = ({ isOpen, onClose }) => {
         className={`
           fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-xl z-50
           transform transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
         {/* Header */}
@@ -30,8 +30,18 @@ export const ShareOverlay = ({ isOpen, onClose }) => {
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             aria-label="Close share panel"
           >
-            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-gray-600 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>

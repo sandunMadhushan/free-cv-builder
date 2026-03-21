@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
 // Initial state
 const initialState = {
-  activeSection: 'personalInfo',
+  activeSection: "personalInfo",
   isSidebarCollapsed: false,
   exportModalOpen: false,
   importModalOpen: false,
@@ -92,14 +92,15 @@ export const useUIStore = create(
       // Mobile preview toggle
       toggleMobilePreview: (forceState = null) =>
         set((state) => ({
-          isMobilePreviewOpen: forceState !== null ? forceState : !state.isMobilePreviewOpen,
+          isMobilePreviewOpen:
+            forceState !== null ? forceState : !state.isMobilePreviewOpen,
         })),
 
       // Reset UI state
       resetUI: () => set(initialState),
     }),
     {
-      name: 'UI Store',
-    }
-  )
+      name: "UI Store",
+    },
+  ),
 );
