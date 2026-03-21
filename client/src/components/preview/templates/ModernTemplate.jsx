@@ -1,8 +1,8 @@
 import React from 'react';
 
 export const ModernTemplate = ({ cvData, customization }) => {
-  const { personalInfo, profile, experience, education, skills, activeSections, sectionOrder } = cvData;
-  const { primaryColor } = customization;
+  const { personalInfo, profile, experience, education, skills, projects, certifications, languages, activeSections, sectionOrder } = cvData;
+  const { primaryColor, fontSize, spacing, accentStyle } = customization;
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -10,6 +10,74 @@ export const ModernTemplate = ({ cvData, customization }) => {
     const date = new Date(dateString + '-01');
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
+
+  // Dynamic classes based on customization
+  const getFontSizeClasses = () => {
+    switch (fontSize) {
+      case 'small':
+        return {
+          body: 'text-sm',
+          heading: 'text-lg',
+          subheading: 'text-base',
+          small: 'text-xs',
+        };
+      case 'large':
+        return {
+          body: 'text-lg',
+          heading: 'text-2xl',
+          subheading: 'text-xl',
+          small: 'text-base',
+        };
+      default: // medium
+        return {
+          body: 'text-base',
+          heading: 'text-xl',
+          subheading: 'text-lg',
+          small: 'text-sm',
+        };
+    }
+  };
+
+  const getSpacingClasses = () => {
+    switch (spacing) {
+      case 'compact':
+        return {
+          section: 'mb-4',
+          subsection: 'mb-3',
+          item: 'mb-2',
+          padding: 'p-8',
+        };
+      case 'spacious':
+        return {
+          section: 'mb-10',
+          subsection: 'mb-6',
+          item: 'mb-4',
+          padding: 'p-16',
+        };
+      default: // comfortable
+        return {
+          section: 'mb-6',
+          subsection: 'mb-4',
+          item: 'mb-3',
+          padding: 'p-12',
+        };
+    }
+  };
+
+  const getAccentClassess = () => {
+    switch (accentStyle) {
+      case 'italic':
+        return 'font-semibold italic';
+      case 'underline':
+        return 'font-semibold underline';
+      default: // bold
+        return 'font-bold';
+    }
+  };
+
+  const fontSizes = getFontSizeClasses();
+  const spacingClasses = getSpacingClasses();
+  const accentClass = getAccentClassess();
 
   // Section renderers
   const renderSection = (sectionId) => {
@@ -21,11 +89,11 @@ export const ModernTemplate = ({ cvData, customization }) => {
 
       case 'profile':
         return profile.summary ? (
-          <div key="profile" className="mb-6">
-            <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>
+          <div key="profile" className={spacingClasses.section}>
+            <h2 className={`${fontSizes.heading} ${accentClass} mb-3`} style={{ color: primaryColor }}>
               PROFESSIONAL SUMMARY
             </h2>
-            <p className="text-gray-700 leading-relaxed">{profile.summary}</p>
+            <p className={`text-gray-700 leading-relaxed ${fontSizes.body}`}>{profile.summary}</p>
           </div>
         ) : null;
 
@@ -158,6 +226,102 @@ export const ModernTemplate = ({ cvData, customization }) => {
           </div>
         ) : null;
 
+      case 'projects':
+        return projects && projects.length > 0 ? (
+          <div key="projects" className="mb-6">
+            <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>
+              PROJECTS
+            </h2>
+            <div className="space-y-4">
+              {projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="font-bold text-lg">{project.name || 'Project Name'}</h3>
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {project.technologies.map((tech, index) => (
+                            <span key={index} className="bg-blue-100 text-blue-700 px-2 py-0.5 text-xs rounded">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-sm text-gray-600">
+                      {project.startDate && project.endDate && (
+                        <p>
+                          {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                        </p>
+                      )}
+                      {project.link && (
+                        <a href={project.link} className="text-blue-600 hover:underline text-xs">
+                          View Project
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  {project.description && (
+                    <p className="text-gray-700 mt-2 leading-relaxed whitespace-pre-line">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+
+      case 'certifications':
+        return certifications && certifications.length > 0 ? (
+          <div key="certifications" className="mb-6">
+            <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>
+              CERTIFICATIONS
+            </h2>
+            <div className="space-y-3">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-base">{cert.name || 'Certification Name'}</h3>
+                    <p className="text-gray-700 text-sm">{cert.issuer || 'Issuing Organization'}</p>
+                    {cert.credentialId && (
+                      <p className="text-gray-500 text-xs">ID: {cert.credentialId}</p>
+                    )}
+                  </div>
+                  <div className="text-right text-sm text-gray-600">
+                    <p>{formatDate(cert.date)}</p>
+                    {cert.expiryDate && <p className="text-xs">Expires: {formatDate(cert.expiryDate)}</p>}
+                    {cert.link && (
+                      <a href={cert.link} className="text-blue-600 hover:underline text-xs">
+                        Verify
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+
+      case 'languages':
+        return languages && languages.length > 0 ? (
+          <div key="languages" className="mb-6">
+            <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>
+              LANGUAGES
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {languages.map((lang) => (
+                <div key={lang.id} className="flex justify-between items-center">
+                  <span className="font-medium text-gray-800">{lang.name || 'Language'}</span>
+                  <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                    {lang.proficiency || 'Intermediate'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+
       default:
         return null;
     }
@@ -166,16 +330,16 @@ export const ModernTemplate = ({ cvData, customization }) => {
   return (
     <div
       id="cv-preview-print"
-      className="bg-white shadow-lg w-full max-w-[210mm] min-h-[297mm] p-12"
+      className={`bg-white shadow-lg w-full max-w-[210mm] min-h-[297mm] ${spacingClasses.padding}`}
       style={{ fontFamily: customization.fontFamily || 'Inter, sans-serif' }}
     >
       {/* Header - Personal Info */}
-      <div className="border-b-2 pb-6 mb-6" style={{ borderColor: primaryColor }}>
-        <h1 className="text-4xl font-bold mb-2" style={{ color: primaryColor }}>
+      <div className={`border-b-2 pb-6 ${spacingClasses.section}`} style={{ borderColor: primaryColor }}>
+        <h1 className={`${fontSizes.heading === 'text-2xl' ? 'text-4xl' : fontSizes.heading === 'text-lg' ? 'text-2xl' : 'text-3xl'} ${accentClass} mb-2`} style={{ color: primaryColor }}>
           {personalInfo.fullName || 'Your Name'}
         </h1>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+        <div className={`flex flex-wrap gap-x-4 gap-y-1 ${fontSizes.small} text-gray-600`}>
           {personalInfo.email && (
             <div className="flex items-center">
               <span>✉</span>

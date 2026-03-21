@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const MinimalTemplate = ({ cvData, customization }) => {
-  const { personalInfo, profile, experience, education, skills, activeSections } = cvData;
+  const { personalInfo, profile, experience, education, skills, projects, certifications, languages, activeSections } = cvData;
   const { primaryColor } = customization;
 
   // Format date for display
@@ -15,7 +15,7 @@ export const MinimalTemplate = ({ cvData, customization }) => {
     <div
       id="cv-preview-print"
       className="bg-white shadow-lg w-full max-w-[210mm] min-h-[297mm] flex"
-      style={{ fontFamily: 'system-ui, sans-serif' }}
+      style={{ fontFamily: customization?.fontFamily || 'system-ui, sans-serif' }}
     >
       {/* Left Sidebar */}
       <div className="w-1/3 bg-gray-50 p-8">
@@ -209,6 +209,109 @@ export const MinimalTemplate = ({ cvData, customization }) => {
                       ))}
                     </div>
                   )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Projects */}
+        {activeSections.projects && projects && projects.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-bold mb-4 text-gray-900 uppercase tracking-wider"
+                style={{ color: primaryColor }}>
+              Projects
+            </h2>
+
+            <div className="space-y-6">
+              {projects.map((project) => (
+                <div key={project.id} className="relative pl-4 border-l-2 border-gray-200">
+                  <div className="absolute w-2 h-2 bg-gray-400 rounded-full -left-1 top-1"></div>
+
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold text-base text-gray-900">{project.name || 'Project Name'}</h3>
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="mt-1">
+                          <span className="text-gray-500 text-xs">
+                            {project.technologies.join(' • ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-xs text-gray-500">
+                      {project.startDate && project.endDate && (
+                        <p>
+                          {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                        </p>
+                      )}
+                      {project.link && (
+                        <a href={project.link} className="text-blue-600 hover:underline">
+                          View
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {project.description && (
+                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Certifications */}
+        {activeSections.certifications && certifications && certifications.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-bold mb-4 text-gray-900 uppercase tracking-wider"
+                style={{ color: primaryColor }}>
+              Certifications
+            </h2>
+
+            <div className="space-y-4">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-900">{cert.name || 'Certification Name'}</h3>
+                    <p className="text-gray-600 text-xs">{cert.issuer || 'Issuing Organization'}</p>
+                    {cert.credentialId && (
+                      <p className="text-gray-500 text-xs">ID: {cert.credentialId}</p>
+                    )}
+                  </div>
+                  <div className="text-right text-xs text-gray-500">
+                    <p>{formatDate(cert.date)}</p>
+                    {cert.expiryDate && (
+                      <p>Exp: {formatDate(cert.expiryDate)}</p>
+                    )}
+                    {cert.link && (
+                      <a href={cert.link} className="text-blue-600 hover:underline">
+                        Verify
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Languages */}
+        {activeSections.languages && languages && languages.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-bold mb-4 text-gray-900 uppercase tracking-wider"
+                style={{ color: primaryColor }}>
+              Languages
+            </h2>
+
+            <div className="grid grid-cols-2 gap-2">
+              {languages.map((lang) => (
+                <div key={lang.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded">
+                  <span className="font-medium text-gray-800 text-xs">{lang.name || 'Language'}</span>
+                  <span className="text-gray-600 text-xs">{lang.proficiency || 'Intermediate'}</span>
                 </div>
               ))}
             </div>

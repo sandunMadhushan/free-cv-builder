@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const ClassicTemplate = ({ cvData, customization }) => {
-  const { personalInfo, profile, experience, education, skills, activeSections } = cvData;
+  const { personalInfo, profile, experience, education, skills, projects, certifications, languages, activeSections } = cvData;
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -14,7 +14,7 @@ export const ClassicTemplate = ({ cvData, customization }) => {
     <div
       id="cv-preview-print"
       className="bg-white shadow-lg w-full max-w-[210mm] min-h-[297mm] p-12"
-      style={{ fontFamily: 'Georgia, serif' }}
+      style={{ fontFamily: customization?.fontFamily || 'Georgia, serif' }}
     >
       {/* Header - Personal Info */}
       <div className="text-center border-b border-gray-400 pb-6 mb-8">
@@ -180,6 +180,106 @@ export const ClassicTemplate = ({ cvData, customization }) => {
                 <span className="text-gray-700">{skills.languages.join(', ')}</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Projects */}
+      {activeSections.projects && projects && projects.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold mb-4 text-gray-900 uppercase tracking-wider border-b border-gray-300 pb-1">
+            Projects
+          </h2>
+
+          <div className="space-y-4">
+            {projects.map((project) => (
+              <div key={project.id}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-base text-gray-900">{project.name || 'Project Name'}</h3>
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="mt-1">
+                        <span className="text-gray-600 text-sm">
+                          Technologies: {project.technologies.join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right text-sm text-gray-600">
+                    {project.startDate && project.endDate && (
+                      <p className="font-medium">
+                        {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                      </p>
+                    )}
+                    {project.link && (
+                      <a href={project.link} className="text-blue-600 underline text-xs">
+                        View Project
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {project.description && (
+                  <div className="ml-4 text-gray-800 text-sm leading-relaxed whitespace-pre-line mt-2">
+                    {project.description}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Certifications */}
+      {activeSections.certifications && certifications && certifications.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold mb-4 text-gray-900 uppercase tracking-wider border-b border-gray-300 pb-1">
+            Certifications
+          </h2>
+
+          <div className="space-y-3">
+            {certifications.map((cert) => (
+              <div key={cert.id}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-base text-gray-900">{cert.name || 'Certification Name'}</h3>
+                    <h4 className="text-gray-700 italic text-sm">{cert.issuer || 'Issuing Organization'}</h4>
+                    {cert.credentialId && (
+                      <p className="text-gray-600 text-xs">Credential ID: {cert.credentialId}</p>
+                    )}
+                  </div>
+                  <div className="text-right text-sm text-gray-600">
+                    <p className="font-medium">{formatDate(cert.date)}</p>
+                    {cert.expiryDate && (
+                      <p className="text-xs">Expires: {formatDate(cert.expiryDate)}</p>
+                    )}
+                    {cert.link && (
+                      <a href={cert.link} className="text-blue-600 underline text-xs">
+                        Verify
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Languages */}
+      {activeSections.languages && languages && languages.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold mb-4 text-gray-900 uppercase tracking-wider border-b border-gray-300 pb-1">
+            Languages
+          </h2>
+
+          <div className="space-y-2">
+            {languages.map((lang) => (
+              <div key={lang.id} className="flex justify-between items-center">
+                <span className="font-semibold text-gray-800">{lang.name || 'Language'}</span>
+                <span className="text-sm text-gray-700">{lang.proficiency || 'Intermediate'}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

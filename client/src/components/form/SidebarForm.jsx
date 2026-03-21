@@ -4,8 +4,12 @@ import { ProfileForm } from './sections/ProfileForm';
 import { ExperienceForm } from './sections/ExperienceForm';
 import { EducationForm } from './sections/EducationForm';
 import { SkillsForm } from './sections/SkillsForm';
+import { ProjectsForm } from './sections/ProjectsForm';
+import { CertificationsForm } from './sections/CertificationsForm';
+import { LanguagesForm } from './sections/LanguagesForm';
 import { SectionManager } from './SectionManager';
 import { Customization } from '../customization/Customization';
+import { ImportResume } from '../features/ImportResume';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -16,6 +20,10 @@ export const SidebarForm = () => {
     { id: 'experience', label: 'Experience', component: ExperienceForm },
     { id: 'education', label: 'Education', component: EducationForm },
     { id: 'skills', label: 'Skills', component: SkillsForm },
+    { id: 'projects', label: 'Projects', component: ProjectsForm },
+    { id: 'certifications', label: 'Certifications', component: CertificationsForm },
+    { id: 'languages', label: 'Languages', component: LanguagesForm },
+    { id: 'import', label: 'Import Resume', component: ImportResume },
     { id: 'customize', label: 'Customize', component: Customization },
     { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];

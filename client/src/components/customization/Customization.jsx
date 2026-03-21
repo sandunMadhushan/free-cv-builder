@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { TemplateSelector } from './TemplateSelector';
 import { ColorCustomizer } from './ColorCustomizer';
+import { FontCustomizer } from './FontCustomizer';
+import { TypographyCustomizer } from './TypographyCustomizer';
 import { SectionReorder } from './SectionReorder';
 
 export const Customization = () => {
@@ -9,6 +11,8 @@ export const Customization = () => {
   const sections = [
     { id: 'templates', label: 'Templates', component: TemplateSelector },
     { id: 'colors', label: 'Colors', component: ColorCustomizer },
+    { id: 'fonts', label: 'Fonts', component: FontCustomizer },
+    { id: 'typography', label: 'Typography', component: TypographyCustomizer },
     { id: 'reorder', label: 'Section Order', component: SectionReorder },
   ];
 
