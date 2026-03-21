@@ -6,17 +6,25 @@ class LocalShareService {
     this.storageKey = 'cv-shares';
   }
 
-  // Generate a shareable URL with CV data encoded
-  generateShareLink(cvData) {
+  // Generate a shareable URL with CV data and styling encoded
+  generateShareLink(cvData, themeData = {}, templateData = {}) {
     try {
       // Create a unique share ID
       const shareId = nanoid(10);
 
       // Clean up CV data (remove empty sections, etc.)
-      const cleanData = this.cleanCVData(cvData);
+      const cleanCVData = this.cleanCVData(cvData);
 
-      // Compress and encode CV data
-      const encodedData = this.encodeData(cleanData);
+      // Create complete share package with styling
+      const sharePackage = {
+        cv: cleanCVData,
+        theme: themeData,
+        template: templateData,
+        version: '1.0'
+      };
+
+      // Compress and encode complete package
+      const encodedData = this.encodeData(sharePackage);
 
       // Create share URL with data as a parameter
       const baseUrl = window.location.origin + window.location.pathname;
@@ -26,8 +34,10 @@ class LocalShareService {
       this.saveShareInfo(shareId, {
         id: shareId,
         createdAt: new Date().toISOString(),
-        title: cleanData.personalInfo?.fullName || 'Untitled CV',
-        shareUrl: shareUrl
+        title: cleanCVData.personalInfo?.fullName || 'Untitled CV',
+        shareUrl: shareUrl,
+        hasTheme: Object.keys(themeData).length > 0,
+        hasTemplate: Object.keys(templateData).length > 0
       });
 
       return {
@@ -77,28 +87,28 @@ class LocalShareService {
     return dataOnly;
   }
 
-  // Encode CV data for URL
+  // Encode complete data package for URL
   encodeData(data) {
     try {
       const jsonString = JSON.stringify(data);
       // Use base64 encoding
       return btoa(encodeURIComponent(jsonString));
     } catch (error) {
-      throw new Error('Failed to encode CV data');
+      throw new Error('Failed to encode share data');
     }
   }
 
-  // Decode CV data from URL
+  // Decode complete data package from URL
   decodeData(encodedData) {
     try {
       const jsonString = decodeURIComponent(atob(encodedData));
       return JSON.parse(jsonString);
     } catch (error) {
-      throw new Error('Failed to decode CV data');
+      throw new Error('Failed to decode share data');
     }
   }
 
-  // Load CV data from URL parameters
+  // Load complete CV data and styling from URL parameters
   loadSharedCV() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -109,10 +119,25 @@ class LocalShareService {
         return null;
       }
 
-      const cvData = this.decodeData(encodedData);
+      const sharePackage = this.decodeData(encodedData);
+
+      // Handle backwards compatibility with old format
+      if (!sharePackage.version) {
+        // Old format - just CV data
+        return {
+          shareId: shareId,
+          data: {
+            cv: sharePackage,
+            theme: {},
+            template: {}
+          }
+        };
+      }
+
+      // New format - complete package
       return {
         shareId: shareId,
-        data: cvData
+        data: sharePackage
       };
     } catch (error) {
       console.error('Failed to load shared CV:', error);

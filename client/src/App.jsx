@@ -7,6 +7,7 @@ import { CVPreview } from './components/preview/CVPreview';
 import { generatePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
 import { useCVStore } from './store/cvStore';
 import { useThemeStore } from './store/themeStore';
+import { useTemplateStore } from './store/templateStore';
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { localShareService } from './utils/localShareService';
 
@@ -17,7 +18,8 @@ function App() {
 
   const cvData = useCVStore();
   const { resetCV, loadCV } = useCVStore();
-  const { initializeTheme } = useThemeStore();
+  const { initializeTheme, setTheme } = useThemeStore();
+  const templateStore = useTemplateStore();
 
   // Initialize theme on app load
   useEffect(() => {
@@ -28,12 +30,47 @@ function App() {
   useEffect(() => {
     const sharedCV = localShareService.loadSharedCV();
     if (sharedCV) {
+      const { cv, theme, template } = sharedCV.data;
+
       // Load the shared CV data into the store
-      loadCV(sharedCV.data);
+      if (cv) {
+        loadCV(cv);
+      }
+
+      // Load theme data if available
+      if (theme && Object.keys(theme).length > 0) {
+        // Apply theme settings
+        if (theme.theme) {
+          setTheme(theme.theme);
+        }
+        // Note: themeStore will automatically handle the theme application
+      }
+
+      // Load template data if available
+      if (template && Object.keys(template).length > 0) {
+        // Apply template settings
+        if (template.selectedTemplate) {
+          templateStore.setTemplate(template.selectedTemplate);
+        }
+        if (template.customization) {
+          templateStore.updateCustomization(template.customization);
+        }
+        if (template.showPhoto !== undefined) {
+          if (template.showPhoto !== templateStore.showPhoto) {
+            templateStore.togglePhoto();
+          }
+        }
+        if (template.pageSize) {
+          templateStore.setPageSize(template.pageSize);
+        }
+      }
 
       // Show a notification that shared CV was loaded
       setExportStatus('success');
-      setExportMessage(`Loaded shared CV: ${sharedCV.data.personalInfo?.fullName || 'Untitled CV'}`);
+      const cvName = cv?.personalInfo?.fullName || 'Untitled CV';
+      const hasCustomizations = (theme && Object.keys(theme).length > 0) ||
+                                (template && Object.keys(template).length > 0);
+      setExportMessage(`Loaded shared CV: ${cvName}${hasCustomizations ? ' (with styling preserved)' : ''}`);
 
       // Clear the URL parameters after loading
       setTimeout(() => {
@@ -43,7 +80,7 @@ function App() {
         }, 3000);
       }, 1000);
     }
-  }, [loadCV]);
+  }, [loadCV, setTheme, templateStore]);
 
   // Define functions first
   const handleExport = async () => {

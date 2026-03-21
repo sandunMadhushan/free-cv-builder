@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { useCVStore } from '../../store/cvStore';
+import { useThemeStore } from '../../store/themeStore';
+import { useTemplateStore } from '../../store/templateStore';
 import { localShareService } from '../../utils/localShareService';
 
 export const ShareManager = () => {
@@ -11,6 +13,8 @@ export const ShareManager = () => {
   const [shareStatus, setShareStatus] = useState({ type: null, message: '' });
 
   const cvData = useCVStore();
+  const themeData = useThemeStore();
+  const templateData = useTemplateStore();
 
   // Load existing shares on component mount
   useEffect(() => {
@@ -24,13 +28,28 @@ export const ShareManager = () => {
     setShareStatus({ type: null, message: '' });
 
     try {
-      const result = localShareService.generateShareLink(cvData);
+      // Extract only the data we need from stores (remove functions)
+      const cleanThemeData = {
+        isDark: themeData.isDark,
+        theme: themeData.theme,
+        previewIsDark: themeData.previewIsDark,
+        previewTheme: themeData.previewTheme
+      };
+
+      const cleanTemplateData = {
+        selectedTemplate: templateData.selectedTemplate,
+        customization: templateData.customization,
+        showPhoto: templateData.showPhoto,
+        pageSize: templateData.pageSize
+      };
+
+      const result = localShareService.generateShareLink(cvData, cleanThemeData, cleanTemplateData);
 
       if (result.success) {
         setShareData(result.data);
         setShareStatus({
           type: 'success',
-          message: 'Share link generated successfully!'
+          message: 'Share link generated with styling preserved!'
         });
 
         // Update local shares list
@@ -139,6 +158,7 @@ export const ShareManager = () => {
                 <li>• Including in email signatures</li>
                 <li>• Adding to social media profiles</li>
                 <li>• Embedding in portfolios or websites</li>
+                <li>• <strong>Preserves exact colors and template!</strong></li>
                 <li>• Works without internet connection!</li>
               </ul>
             </div>
@@ -225,14 +245,16 @@ export const ShareManager = () => {
 
       {/* Sharing Tips */}
       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-        <h3 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2">💡 How Local Sharing Works</h3>
+        <h3 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2">🎨 Complete Styling Preservation</h3>
         <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-          <li>• Your CV data is encoded directly into the URL - no server needed!</li>
-          <li>• Links work offline and don't require any external services</li>
-          <li>• Your data stays private - it's not stored on any server</li>
-          <li>• Recipients can view your CV in any modern web browser</li>
-          <li>• Links are permanent but regenerate when your CV changes</li>
-          <li>• Be mindful of URL length limits in some messaging platforms</li>
+          <li>• <strong>Template & colors preserved:</strong> Recipients see the exact same design</li>
+          <li>• <strong>Theme included:</strong> Dark/light mode preference is maintained</li>
+          <li>• <strong>No server needed:</strong> All data encoded directly into the URL</li>
+          <li>• <strong>Works offline:</strong> Links work without any external services</li>
+          <li>• <strong>Privacy first:</strong> Your data never touches any server</li>
+          <li>• <strong>Universal compatibility:</strong> Works in any modern web browser</li>
+          <li>• <strong>Auto-regenerates:</strong> Links update when you change styling</li>
+          <li>• Be mindful of URL length limits on some messaging platforms</li>
         </ul>
       </div>
     </div>
