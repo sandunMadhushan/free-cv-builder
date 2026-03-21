@@ -29,16 +29,16 @@ const initialState = {
   projects: [],
   certifications: [],
   languages: [],
-  sectionOrder: ['personalInfo', 'profile', 'experience', 'education', 'skills'],
+  sectionOrder: ['personalInfo', 'profile', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'],
   activeSections: {
     personalInfo: true,
     profile: true,
     experience: true,
     education: true,
     skills: true,
-    projects: false,
-    certifications: false,
-    languages: false,
+    projects: true,
+    certifications: true,
+    languages: true,
   },
 };
 

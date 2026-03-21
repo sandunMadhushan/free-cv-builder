@@ -541,6 +541,13 @@ Please try:
               </ul>
             </div>
           </div>
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-blue-900 dark:text-blue-300 text-sm font-medium">🔧 <strong>Having trouble with PDF import?</strong></p>
+            <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
+              If your PDF can't be imported (especially PDFs from other CV builders),
+              <strong> use "Export PDF → Searchable PDF"</strong> in the header for text-based PDFs that can be imported back!
+            </p>
+          </div>
           <p className="mt-3 text-xs">
             <strong>Note:</strong> After importing, please review and edit the extracted data for accuracy.
             The AI parser works best with well-structured, text-based resumes.

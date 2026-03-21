@@ -3,7 +3,7 @@ import { Header } from './components/layout/Header';
 import { SplitScreenLayout } from './components/layout/SplitScreenLayout';
 import { SidebarForm } from './components/form/SidebarForm';
 import { CVPreview } from './components/preview/CVPreview';
-import { generatePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
+import { generatePDF, generateSearchablePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
 import { useCVStore } from './store/cvStore';
 import { useThemeStore } from './store/themeStore';
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -60,6 +60,43 @@ function App() {
     }
   };
 
+  const handleExportSearchable = async () => {
+    setIsExporting(true);
+    setExportStatus(null);
+    setExportMessage('');
+
+    try {
+      // Validate CV data before export
+      const validation = validateCVForExport(cvData);
+
+      if (!validation.isValid) {
+        setExportStatus('error');
+        setExportMessage(`Please fix the following issues before exporting:\n• ${validation.issues.join('\n• ')}`);
+        return;
+      }
+
+      // Generate suggested filename
+      const filename = suggestFilename(cvData);
+
+      // Generate and download searchable PDF
+      const result = await generateSearchablePDF(cvData, filename);
+
+      if (result.success) {
+        setExportStatus('success');
+        setExportMessage(result.message);
+      } else {
+        setExportStatus('error');
+        setExportMessage(result.message);
+      }
+    } catch (error) {
+      console.error('Searchable export error:', error);
+      setExportStatus('error');
+      setExportMessage(`An unexpected error occurred: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const closeStatusMessage = () => {
     setExportStatus(null);
     setExportMessage('');
@@ -79,7 +116,7 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
-      <Header onExport={handleExport} />
+      <Header onExport={handleExport} onExportSearchable={handleExportSearchable} />
 
       <SplitScreenLayout
         leftPanel={<SidebarForm />}
