@@ -135,15 +135,37 @@ export const Footer = () => {
             }
           }, 1000);
 
-          // Listen for messages from the popup (if callback includes postMessage)
+          // Listen for messages from the popup (callback from backend)
           const handleMessage = (event) => {
-            if (event.origin !== window.location.origin) return;
+            // Accept messages from our backend domain
+            const backendDomain = new URL(API_BASE_URL).origin;
+            if (event.origin !== window.location.origin && event.origin !== backendDomain) {
+              return;
+            }
 
             if (event.data.type === 'github-auth-success') {
               popup.close();
               clearInterval(checkClosed);
+
+              // Show success message
+              setStarMessage({
+                type: 'success',
+                text: '✅ GitHub authentication successful!'
+              });
+
+              // Check auth status and then auto-star
               checkAuthStatus().then(() => {
-                setTimeout(() => handleStarRepo(), 500);
+                setTimeout(() => handleStarRepo(), 1000);
+              });
+            }
+
+            if (event.data.type === 'github-auth-error') {
+              popup.close();
+              clearInterval(checkClosed);
+
+              setStarMessage({
+                type: 'info',
+                text: '❌ GitHub authentication failed. Please try again.'
               });
             }
 

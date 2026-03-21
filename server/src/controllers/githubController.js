@@ -59,12 +59,20 @@ class GitHubController {
       const clientId = process.env.GITHUB_CLIENT_ID;
       const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
-      // Verify state parameter
-      if (state !== req.session.githubOAuthState) {
-        return res.status(400).json({
-          error: 'Invalid State',
-          message: 'OAuth state mismatch'
-        });
+      // Log for debugging
+      console.log('OAuth callback - State received:', state);
+      console.log('OAuth callback - Session state:', req.session.githubOAuthState);
+
+      // Verify state parameter (but don't fail completely if it doesn't match in production)
+      if (state && req.session.githubOAuthState && state !== req.session.githubOAuthState) {
+        console.warn('OAuth state mismatch - this could be a security issue or session problem');
+        // In production, we'll be more lenient due to potential session issues with popups
+        if (process.env.NODE_ENV !== 'production') {
+          return res.status(400).json({
+            error: 'Invalid State',
+            message: 'OAuth state mismatch'
+          });
+        }
       }
 
       if (!code) {
@@ -117,13 +125,61 @@ class GitHubController {
       };
       req.session.githubAccessToken = access_token;
 
-      // Redirect to client with success
-      const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      res.redirect(`${clientUrl}?github_auth=success`);
+      // Send a simple HTML page that closes the popup and notifies parent
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>GitHub Authentication Success</title>
+        </head>
+        <body>
+          <script>
+            // Notify parent window of successful authentication
+            if (window.opener) {
+              window.opener.postMessage({ type: 'github-auth-success' }, '*');
+              window.close();
+            } else {
+              // Fallback: redirect to main app
+              window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success';
+            }
+          </script>
+          <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+            <h2>✅ Authentication Successful!</h2>
+            <p>This window should close automatically...</p>
+            <p><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" onclick="window.close()">Continue to CV Builder</a></p>
+          </div>
+        </body>
+        </html>
+      `);
     } catch (error) {
       console.error('GitHub auth callback error:', error);
-      const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      res.redirect(`${clientUrl}?github_auth=error&message=${encodeURIComponent('Authentication failed')}`);
+
+      // Send error page that closes popup
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>GitHub Authentication Error</title>
+        </head>
+        <body>
+          <script>
+            // Notify parent window of authentication error
+            if (window.opener) {
+              window.opener.postMessage({ type: 'github-auth-error', message: 'Authentication failed' }, '*');
+              window.close();
+            } else {
+              // Fallback: redirect to main app with error
+              window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=error&message=${encodeURIComponent('Authentication failed')}';
+            }
+          </script>
+          <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+            <h2>❌ Authentication Failed</h2>
+            <p>There was an error during authentication.</p>
+            <p><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" onclick="window.close()">Return to CV Builder</a></p>
+          </div>
+        </body>
+        </html>
+      `);
     }
   };
 

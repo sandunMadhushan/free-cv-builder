@@ -1,8 +1,8 @@
 # 🎯 Free CV Builder
 
-A modern, professional CV Builder application built with React, featuring real-time preview, multiple templates, cloud sync, and shareable links. Create beautiful, ATS-friendly resumes for free!
+A modern, professional CV Builder application built with React, featuring real-time preview, multiple templates, cloud sync, shareable links, and **GitHub integration with direct repository starring**. Create beautiful, ATS-friendly resumes for free!
 
-![CV Builder Screenshot](./docs/screenshot.png)
+<!-- ![CV Builder Screenshot](./docs/screenshot.png) -->
 
 ## ✨ Features
 
@@ -41,6 +41,14 @@ A modern, professional CV Builder application built with React, featuring real-t
 - **Font Selection**: Choose from 5 professional font families
 - **Typography Controls**: Adjust font size, spacing, and accent styles
 
+### ⭐ **GitHub Integration** _(NEW)_
+
+- **Direct Repository Starring**: One-click GitHub repository starring without popups
+- **GitHub OAuth Authentication**: Secure authentication with GitHub login
+- **Real-time Star Count**: Live repository star count display in footer
+- **Seamless Integration**: Stars repositories directly from the CV Builder interface
+- **User-friendly Authentication**: Popup-based OAuth flow with automatic closure
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -54,10 +62,20 @@ A modern, professional CV Builder application built with React, featuring real-t
 ### Backend
 
 - **Node.js** with Express.js for robust API server
-- **MongoDB** with Mongoose for flexible data storage
+- **MongoDB Atlas** with Mongoose for flexible cloud data storage
+- **GitHub OAuth 2.0** for secure authentication and API access
+- **Express Session** with secure session management
+- **Axios** for reliable HTTP client and GitHub API integration
 - **Joi** for comprehensive request validation
 - **Helmet** for security headers and protection
 - **CORS** for cross-origin resource sharing
+
+### Deployment & Infrastructure
+
+- **Render.com** - Free backend hosting with auto-scaling
+- **Netlify** - Frontend hosting with continuous deployment
+- **MongoDB Atlas** - Cloud database with free tier
+- **GitHub OAuth** - Authentication service integration
 
 ### Development Tools
 
@@ -78,8 +96,8 @@ A modern, professional CV Builder application built with React, featuring real-t
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/cv-builder.git
-cd cv-builder
+git clone https://github.com/sandunMadhushan/free-cv-builder.git
+cd free-cv-builder
 ```
 
 2. **Install dependencies**
@@ -105,9 +123,16 @@ cd server
 cp .env.example .env
 
 # Edit .env with your configuration
-# MONGODB_URI=mongodb://localhost:27017/cv-builder
+# MONGODB_URI=mongodb://localhost:27017/cv-builder (local)
+# OR use MongoDB Atlas for cloud database
 # CLIENT_URL=http://localhost:5173
 # PORT=5000
+
+# For GitHub integration (optional):
+# GITHUB_CLIENT_ID=your-github-oauth-client-id
+# GITHUB_CLIENT_SECRET=your-github-oauth-client-secret
+# GITHUB_CALLBACK_URL=http://localhost:5000/api/auth/github/callback
+# SESSION_SECRET=generate-strong-random-secret-key
 ```
 
 4. **Start MongoDB**
@@ -173,7 +198,7 @@ npm run dev
 ## 🏗️ Project Structure
 
 ```
-cv-builder/
+free-cv-builder/
 ├── client/                     # React frontend application
 │   ├── public/                 # Static assets and index.html
 │   ├── src/
@@ -221,6 +246,17 @@ cv-builder/
 - `GET /api/share/:shareId` - Get public CV by share ID
 - `GET /api/cv/:id/analytics` - Get CV view analytics
 
+### GitHub Integration _(NEW)_
+
+- `GET /api/auth/github` - Initiate GitHub OAuth authentication
+- `GET /api/auth/github/callback` - Handle GitHub OAuth callback
+- `GET /api/auth/status` - Get current authentication status
+- `POST /api/auth/logout` - Logout and clear session
+- `GET /api/auth/repo/stars` - Get repository star count
+- `POST /api/auth/repo/star` - Star the repository
+- `DELETE /api/auth/repo/star` - Unstar the repository
+- `GET /api/auth/repo/star/status` - Check if user has starred repository
+
 ### Health & Status
 
 - `GET /health` - Server health check
@@ -228,34 +264,67 @@ cv-builder/
 
 ## 🚀 Deployment
 
-### Frontend (Netlify)
+### Live Application
+
+- **🌐 Live Demo**: [https://free-cv-builder.netlify.app](https://free-cv-builder.netlify.app)
+- **🔧 API Server**: [https://cv-builder-api-fexd.onrender.com](https://cv-builder-api-fexd.onrender.com)
+- **📖 Documentation**: [Backend API Guide](./server/README.md)
+
+### Quick Deploy (FREE)
+
+Both frontend and backend can be deployed for **$0/month** using free tiers:
+
+#### Frontend (Netlify) - **FREE**
 
 ```bash
 cd client
 npm run build
-# Deploy dist/ folder to Netlify
+# Connect GitHub repo to Netlify for auto-deploy
 ```
 
-### Backend (Railway/Heroku)
+#### Backend (Render) - **FREE**
 
 ```bash
-cd server
-# Set environment variables in hosting dashboard
-# Deploy server directory
+# 1. Connect GitHub repo to Render
+# 2. Set Root Directory: server
+# 3. Build Command: npm install
+# 4. Start Command: npm start
+# 5. Add environment variables (see below)
+```
+
+#### Database (MongoDB Atlas) - **FREE**
+
+```bash
+# 1. Create free cluster (512MB)
+# 2. Create database user
+# 3. Whitelist all IPs (0.0.0.0/0)
+# 4. Get connection string
 ```
 
 ### Environment Variables
 
+#### Production Backend (Render)
+
 ```env
-# Production Backend
 NODE_ENV=production
-PORT=5000
+PORT=10000
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/cv-builder
 CLIENT_URL=https://your-cv-builder.netlify.app
+SESSION_SECRET=generate-strong-random-secret-64-chars
 
-# Production Frontend
-VITE_API_BASE_URL=https://your-api-server.railway.app/api
+# GitHub OAuth (optional)
+GITHUB_CLIENT_ID=your-github-oauth-client-id
+GITHUB_CLIENT_SECRET=your-github-oauth-client-secret
+GITHUB_CALLBACK_URL=https://your-backend.onrender.com/api/auth/github/callback
 ```
+
+#### Production Frontend (Netlify)
+
+```env
+VITE_API_URL=https://your-backend.onrender.com
+```
+
+📋 **[Complete Deployment Guide](./server/README.md)** - Step-by-step instructions with screenshots
 
 ## 🎨 Design Principles
 
@@ -270,6 +339,8 @@ VITE_API_BASE_URL=https://your-api-server.railway.app/api
 
 - **Local Data Storage**: Primary data stored locally in browser
 - **Optional Cloud Sync**: User controls cloud storage and sharing
+- **GitHub OAuth**: Secure GitHub authentication with industry-standard OAuth 2.0
+- **Session Management**: Secure session handling with HTTP-only cookies
 - **Secure Backend**: Helmet.js security headers and input validation
 - **Rate Limiting**: API protection against abuse
 - **Data Transparency**: Clear indication of what data is shared publicly
@@ -293,8 +364,10 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 - **Tailwind CSS** for the utility-first CSS framework
 - **React Team** for the excellent JavaScript library
 - **Zustand** for simple and scalable state management
-- **MongoDB** for flexible document database
-- **Vercel** and **Netlify** for hosting solutions
+- **MongoDB Atlas** for flexible cloud document database
+- **GitHub** for OAuth authentication and repository hosting
+- **Render** for free tier backend hosting
+- **Netlify** for seamless frontend deployment
 
 ## 💡 Future Enhancements
 
@@ -308,8 +381,10 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ---
 
-**Built with ❤️ by the CV Builder Team**
+**Built with ❤️ by [Sandun Madhushan](https://github.com/sandunMadhushan)**
 
-For support, feature requests, or bug reports, please [open an issue](https://github.com/yourusername/cv-builder/issues).
+⭐ **[Star this repository](https://github.com/sandunMadhushan/free-cv-builder)** if you find it helpful!
 
-**[Live Demo](https://your-cv-builder.netlify.app)** • **[Documentation](./docs/)** • **[API Reference](./docs/api.md)**
+For support, feature requests, or bug reports, please [open an issue](https://github.com/sandunMadhushan/free-cv-builder/issues).
+
+**[🌐 Live Demo](https://free-cv-builder.netlify.app)** • **[📊 API Status](https://cv-builder-api-fexd.onrender.com)** • **[📖 Deployment Guide](./server/README.md)**
