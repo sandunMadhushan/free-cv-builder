@@ -5,7 +5,7 @@ export const SplitScreenLayout = ({ leftPanel, rightPanel }) => {
   const { isMobilePreviewOpen, toggleMobilePreview } = useUIStore();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 overflow-hidden">
       {/* Mobile Navigation Bar */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex">
@@ -38,7 +38,7 @@ export const SplitScreenLayout = ({ leftPanel, rightPanel }) => {
         <div
           className={`
             w-full lg:w-1/2 overflow-y-auto border-r border-gray-200 dark:border-gray-700
-            bg-gray-50 dark:bg-gray-900 transition-colors
+            bg-gray-50 dark:bg-gray-900 transition-colors custom-scrollbar
             ${isMobilePreviewOpen ? 'hidden lg:block' : 'block'}
           `}
         >
@@ -50,7 +50,7 @@ export const SplitScreenLayout = ({ leftPanel, rightPanel }) => {
         {/* Right Panel - Preview */}
         <div
           className={`
-            w-full lg:w-1/2 overflow-y-auto bg-gray-100 dark:bg-gray-800 transition-colors
+            w-full lg:w-1/2 overflow-y-auto bg-gray-100 dark:bg-gray-800 transition-colors custom-scrollbar
             ${isMobilePreviewOpen ? 'block' : 'hidden lg:block'}
           `}
         >

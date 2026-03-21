@@ -37,7 +37,7 @@ export const SidebarForm = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 lg:mb-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 lg:mb-6 overflow-x-auto thin-scrollbar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -57,7 +57,7 @@ export const SidebarForm = () => {
       </div>
 
       {/* Active Form Component */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {ActiveComponent && <ActiveComponent />}
       </div>
     </div>

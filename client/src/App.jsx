@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
+import { Footer } from './components/layout/Footer';
 import { SplitScreenLayout } from './components/layout/SplitScreenLayout';
 import { SidebarForm } from './components/form/SidebarForm';
 import { CVPreview } from './components/preview/CVPreview';
@@ -83,10 +84,14 @@ function App() {
         onExport={handleExport}
       />
 
-      <SplitScreenLayout
-        leftPanel={<SidebarForm />}
-        rightPanel={<CVPreview />}
-      />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <SplitScreenLayout
+          leftPanel={<SidebarForm />}
+          rightPanel={<CVPreview />}
+        />
+      </div>
+
+      <Footer />
 
       {/* Loading overlay during export */}
       {isExporting && (
