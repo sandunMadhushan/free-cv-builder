@@ -169,26 +169,46 @@ export const Footer = () => {
                 console.log('Starting auth check and auto-star process...');
 
                 try {
-                  // Check authentication status first
-                  const authResult = await checkAuthStatus();
+                  // Check authentication status multiple times to ensure session is ready
+                  let authResult = false;
+                  let attempts = 0;
+                  const maxAttempts = 5;
+
+                  while (!authResult && attempts < maxAttempts) {
+                    attempts++;
+                    console.log(`Auth check attempt ${attempts}/${maxAttempts}...`);
+
+                    authResult = await checkAuthStatus();
+
+                    if (!authResult && attempts < maxAttempts) {
+                      // Wait between attempts
+                      await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                  }
 
                   if (authResult) {
                     // Wait a bit more to ensure state is updated
                     setTimeout(() => {
-                      console.log('Attempting to auto-star repository...');
+                      console.log('Auth confirmed! Attempting to auto-star repository...');
                       // Call handleStarRepo with skipAuthCheck = true to avoid infinite loop
                       handleStarRepo(true);
                     }, 500);
+                  } else {
+                    console.log('❌ Authentication failed after multiple attempts');
+                    setStarMessage({
+                      type: 'info',
+                      text: '✅ Authenticated! Please click the star button to star the repository.'
+                    });
                   }
 
                 } catch (error) {
                   console.error('Auto-star process error:', error);
                   setStarMessage({
                     type: 'info',
-                    text: '✅ Authenticated! Click the star button to star the repository.'
+                    text: '✅ Authenticated! Please click the star button to star the repository.'
                   });
                 }
-              }, 1500);
+              }, 2000); // Increased delay to 2 seconds
             }
 
             if (event.data.type === 'github-auth-error') {

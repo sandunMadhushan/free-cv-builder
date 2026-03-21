@@ -49,13 +49,15 @@ app.use(cookieParser());
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key-here",
+    name: 'cv-builder.sid', // Custom session name
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Create session for unauthenticated requests
     cookie: {
-      secure: false, // Set to false to work with Render's proxy setup
-      httpOnly: true,
+      secure: false, // Keep false for Render's proxy setup
+      httpOnly: false, // Allow JavaScript access for popup scenarios
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax', // Allow cross-site requests for OAuth
+      domain: undefined, // Let browser set the domain
     },
   }),
 );

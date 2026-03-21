@@ -125,6 +125,21 @@ class GitHubController {
       };
       req.session.githubAccessToken = access_token;
 
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+        } else {
+          console.log('✅ Session saved successfully for user:', user.login);
+          console.log('Session ID:', req.sessionID);
+          console.log('Session data:', {
+            hasUser: !!req.session.githubUser,
+            hasToken: !!req.session.githubAccessToken,
+            userId: req.session.githubUser?.id
+          });
+        }
+      });
+
       // Send a simple HTML page that closes the popup and notifies parent
       res.send(`
         <!DOCTYPE html>
@@ -302,12 +317,32 @@ class GitHubController {
    */
   getAuthStatus = (req, res) => {
     try {
+      // Debug session information
+      console.log('=== AUTH STATUS CHECK ===');
+      console.log('Session ID:', req.sessionID);
+      console.log('Session exists:', !!req.session);
+      console.log('GitHub user in session:', !!req.session?.githubUser);
+      console.log('GitHub token in session:', !!req.session?.githubAccessToken);
+      console.log('Full session data:', {
+        ...req.session,
+        githubAccessToken: req.session?.githubAccessToken ? '[REDACTED]' : null
+      });
+      console.log('Request headers:', {
+        'cookie': req.headers.cookie,
+        'user-agent': req.headers['user-agent'],
+        'origin': req.headers.origin,
+        'referer': req.headers.referer
+      });
+      console.log('========================');
+
       if (req.session.githubUser && req.session.githubAccessToken) {
+        console.log('✅ User is authenticated:', req.session.githubUser.login);
         res.json({
           authenticated: true,
           user: req.session.githubUser,
         });
       } else {
+        console.log('❌ User is not authenticated - missing session data');
         res.json({
           authenticated: false,
           user: null,
