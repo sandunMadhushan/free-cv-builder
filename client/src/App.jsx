@@ -3,11 +3,9 @@ import { Header } from './components/layout/Header';
 import { SplitScreenLayout } from './components/layout/SplitScreenLayout';
 import { SidebarForm } from './components/form/SidebarForm';
 import { CVPreview } from './components/preview/CVPreview';
-import { generatePDF, generateSearchablePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
-import { generateWordDocument, suggestWordFilename } from './utils/wordGenerator';
+import { generatePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
 import { useCVStore } from './store/cvStore';
 import { useThemeStore } from './store/themeStore';
-import { useTemplateStore } from './store/templateStore';
 import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 function App() {
@@ -18,7 +16,6 @@ function App() {
   const cvData = useCVStore();
   const { resetCV } = useCVStore();
   const { initializeTheme } = useThemeStore();
-  const { customization } = useTemplateStore();
 
   // Initialize theme on app load
   useEffect(() => {
@@ -63,80 +60,6 @@ function App() {
     }
   };
 
-  const handleExportSearchable = async () => {
-    setIsExporting(true);
-    setExportStatus(null);
-    setExportMessage('');
-
-    try {
-      // Validate CV data before export
-      const validation = validateCVForExport(cvData);
-
-      if (!validation.isValid) {
-        setExportStatus('error');
-        setExportMessage(`Please fix the following issues before exporting:\n• ${validation.issues.join('\n• ')}`);
-        return;
-      }
-
-      // Generate suggested filename
-      const filename = suggestFilename(cvData);
-
-      // Generate and download searchable PDF
-      const result = await generateSearchablePDF(cvData, filename);
-
-      if (result.success) {
-        setExportStatus('success');
-        setExportMessage(result.message);
-      } else {
-        setExportStatus('error');
-        setExportMessage(result.message);
-      }
-    } catch (error) {
-      console.error('Searchable export error:', error);
-      setExportStatus('error');
-      setExportMessage(`An unexpected error occurred: ${error.message}`);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportWord = async () => {
-    setIsExporting(true);
-    setExportStatus(null);
-    setExportMessage('');
-
-    try {
-      // Validate CV data before export
-      const validation = validateCVForExport(cvData);
-
-      if (!validation.isValid) {
-        setExportStatus('error');
-        setExportMessage(`Please fix the following issues before exporting:\n• ${validation.issues.join('\n• ')}`);
-        return;
-      }
-
-      // Generate suggested filename
-      const filename = suggestWordFilename(cvData);
-
-      // Generate and download Word document
-      const result = await generateWordDocument(cvData, customization, filename);
-
-      if (result.success) {
-        setExportStatus('success');
-        setExportMessage(result.message);
-      } else {
-        setExportStatus('error');
-        setExportMessage(result.message);
-      }
-    } catch (error) {
-      console.error('Word export error:', error);
-      setExportStatus('error');
-      setExportMessage(`An unexpected error occurred: ${error.message}`);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const closeStatusMessage = () => {
     setExportStatus(null);
     setExportMessage('');
@@ -158,8 +81,6 @@ function App() {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header
         onExport={handleExport}
-        onExportSearchable={handleExportSearchable}
-        onExportWord={handleExportWord}
       />
 
       <SplitScreenLayout
@@ -172,7 +93,7 @@ function App() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-700 dark:text-gray-200">Generating your document...</p>
+            <p className="text-gray-700 dark:text-gray-200">Generating your PDF...</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This may take a few seconds</p>
           </div>
         </div>
