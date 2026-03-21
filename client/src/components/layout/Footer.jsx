@@ -66,18 +66,23 @@ export const Footer = () => {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('Checking GitHub auth status...');
       const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
         method: 'GET',
         credentials: 'include',
       });
       const data = await response.json();
 
+      console.log('Auth status response:', data);
       setIsAuthenticated(data.authenticated);
       setUser(data.user);
+
+      return data.authenticated;
     } catch (error) {
       console.error("Failed to check auth status:", error);
       setIsAuthenticated(false);
       setUser(null);
+      return false;
     }
   };
 
@@ -99,11 +104,17 @@ export const Footer = () => {
     }
   };
 
-  const handleStarRepo = async () => {
-    if (isStarring) return;
+  const handleStarRepo = async (skipAuthCheck = false) => {
+    if (isStarring) {
+      console.log('Already starring, skipping...');
+      return;
+    }
 
-    // Check if user is authenticated
-    if (!isAuthenticated) {
+    console.log('handleStarRepo called:', { isAuthenticated, skipAuthCheck });
+
+    // Check if user is authenticated (unless we're skipping the check after OAuth)
+    if (!skipAuthCheck && !isAuthenticated) {
+      console.log('User not authenticated, initiating OAuth...');
       // Initiate GitHub OAuth flow
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
@@ -126,10 +137,10 @@ export const Footer = () => {
               clearInterval(checkClosed);
               // Check if auth was successful
               setTimeout(async () => {
-                await checkAuthStatus();
-                if (isAuthenticated) {
+                const authResult = await checkAuthStatus();
+                if (authResult) {
                   // Try to star after successful auth
-                  setTimeout(() => handleStarRepo(), 500);
+                  setTimeout(() => handleStarRepo(true), 500);
                 }
               }, 1000);
             }
@@ -150,13 +161,34 @@ export const Footer = () => {
               // Show success message
               setStarMessage({
                 type: 'success',
-                text: '✅ GitHub authentication successful!'
+                text: '✅ GitHub authentication successful! Starring repository...'
               });
 
-              // Check auth status and then auto-star
-              checkAuthStatus().then(() => {
-                setTimeout(() => handleStarRepo(), 1000);
-              });
+              // Wait a bit for the session to be available, then check auth and auto-star
+              setTimeout(async () => {
+                console.log('Starting auth check and auto-star process...');
+
+                try {
+                  // Check authentication status first
+                  const authResult = await checkAuthStatus();
+
+                  if (authResult) {
+                    // Wait a bit more to ensure state is updated
+                    setTimeout(() => {
+                      console.log('Attempting to auto-star repository...');
+                      // Call handleStarRepo with skipAuthCheck = true to avoid infinite loop
+                      handleStarRepo(true);
+                    }, 500);
+                  }
+
+                } catch (error) {
+                  console.error('Auto-star process error:', error);
+                  setStarMessage({
+                    type: 'info',
+                    text: '✅ Authenticated! Click the star button to star the repository.'
+                  });
+                }
+              }, 1500);
             }
 
             if (event.data.type === 'github-auth-error') {
@@ -190,6 +222,7 @@ export const Footer = () => {
     }
 
     // User is authenticated, proceed with starring
+    console.log('User is authenticated, proceeding with starring...');
     setIsStarring(true);
 
     try {

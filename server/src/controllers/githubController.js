@@ -131,23 +131,90 @@ class GitHubController {
         <html>
         <head>
           <title>GitHub Authentication Success</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+              text-align: center;
+              padding: 50px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              margin: 0;
+            }
+            .container {
+              background: rgba(255,255,255,0.1);
+              backdrop-filter: blur(10px);
+              border-radius: 20px;
+              padding: 40px;
+              max-width: 400px;
+              margin: 0 auto;
+            }
+            .success-icon {
+              font-size: 60px;
+              margin-bottom: 20px;
+              animation: bounce 1s ease-in-out;
+            }
+            @keyframes bounce {
+              0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+              40% { transform: translateY(-10px); }
+              60% { transform: translateY(-5px); }
+            }
+          </style>
         </head>
         <body>
-          <script>
-            // Notify parent window of successful authentication
-            if (window.opener) {
-              window.opener.postMessage({ type: 'github-auth-success' }, '*');
-              window.close();
-            } else {
-              // Fallback: redirect to main app
-              window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success';
-            }
-          </script>
-          <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-            <h2>✅ Authentication Successful!</h2>
-            <p>This window should close automatically...</p>
-            <p><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" onclick="window.close()">Continue to CV Builder</a></p>
+          <div class="container">
+            <div class="success-icon">✅</div>
+            <h2>Authentication Successful!</h2>
+            <p>Starring repository automatically...</p>
+            <p><small>This window will close in 2 seconds</small></p>
           </div>
+
+          <script>
+            console.log('GitHub OAuth success - sending message to parent');
+
+            // Function to close popup and notify parent
+            function closePopupAndNotify() {
+              try {
+                // Send message to parent window
+                if (window.opener && !window.opener.closed) {
+                  console.log('Sending success message to parent window');
+                  window.opener.postMessage({
+                    type: 'github-auth-success',
+                    timestamp: Date.now()
+                  }, '*');
+
+                  // Close popup after short delay
+                  setTimeout(() => {
+                    window.close();
+                  }, 1000);
+                } else {
+                  console.log('No opener found, redirecting to main app');
+                  // Fallback: redirect to main app
+                  setTimeout(() => {
+                    window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                  }, 2000);
+                }
+              } catch (error) {
+                console.error('Error in popup communication:', error);
+                // Fallback redirect
+                setTimeout(() => {
+                  window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                }, 2000);
+              }
+            }
+
+            // Execute immediately and also after DOM load
+            closePopupAndNotify();
+
+            // Backup execution after page load
+            window.addEventListener('load', closePopupAndNotify);
+
+            // Force close after 3 seconds as final backup
+            setTimeout(() => {
+              if (window.opener && !window.opener.closed) {
+                window.close();
+              }
+            }, 3000);
+          </script>
         </body>
         </html>
       `);
@@ -160,23 +227,70 @@ class GitHubController {
         <html>
         <head>
           <title>GitHub Authentication Error</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+              text-align: center;
+              padding: 50px;
+              background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+              color: white;
+              margin: 0;
+            }
+            .container {
+              background: rgba(255,255,255,0.1);
+              backdrop-filter: blur(10px);
+              border-radius: 20px;
+              padding: 40px;
+              max-width: 400px;
+              margin: 0 auto;
+            }
+          </style>
         </head>
         <body>
-          <script>
-            // Notify parent window of authentication error
-            if (window.opener) {
-              window.opener.postMessage({ type: 'github-auth-error', message: 'Authentication failed' }, '*');
-              window.close();
-            } else {
-              // Fallback: redirect to main app with error
-              window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=error&message=${encodeURIComponent('Authentication failed')}';
-            }
-          </script>
-          <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-            <h2>❌ Authentication Failed</h2>
+          <div class="container">
+            <div style="font-size: 60px; margin-bottom: 20px;">❌</div>
+            <h2>Authentication Failed</h2>
             <p>There was an error during authentication.</p>
-            <p><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" onclick="window.close()">Return to CV Builder</a></p>
+            <p><small>This window will close automatically</small></p>
           </div>
+
+          <script>
+            console.log('GitHub OAuth error - sending message to parent');
+
+            function closePopupAndNotify() {
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.postMessage({
+                    type: 'github-auth-error',
+                    message: 'Authentication failed',
+                    timestamp: Date.now()
+                  }, '*');
+
+                  setTimeout(() => {
+                    window.close();
+                  }, 2000);
+                } else {
+                  setTimeout(() => {
+                    window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=error&message=${encodeURIComponent('Authentication failed')}&t=' + Date.now();
+                  }, 2000);
+                }
+              } catch (error) {
+                console.error('Error in popup communication:', error);
+                setTimeout(() => {
+                  window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=error&message=${encodeURIComponent('Authentication failed')}&t=' + Date.now();
+                }, 2000);
+              }
+            }
+
+            closePopupAndNotify();
+            window.addEventListener('load', closePopupAndNotify);
+
+            setTimeout(() => {
+              if (window.opener && !window.opener.closed) {
+                window.close();
+              }
+            }, 3000);
+          </script>
         </body>
         </html>
       `);
