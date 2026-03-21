@@ -5,7 +5,7 @@ import { ThemeToggle } from '../common/ThemeToggle';
 import { Tooltip } from '../common/Tooltip';
 import { useCVStore } from '../../store/cvStore';
 
-export const Header = ({ onExport, onExportSearchable }) => {
+export const Header = ({ onExport, onExportSearchable, onExportWord }) => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const resetCV = useCVStore((state) => state.resetCV);
@@ -34,6 +34,8 @@ export const Header = ({ onExport, onExportSearchable }) => {
       onExport();
     } else if (exportType === 'searchable') {
       onExportSearchable();
+    } else if (exportType === 'word') {
+      onExportWord();
     }
   };
 
@@ -98,15 +100,25 @@ export const Header = ({ onExport, onExportSearchable }) => {
                   </button>
 
                   <button
-                    onClick={() => handleExportClick('searchable')}
+                    onClick={() => handleExportClick('word')}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-600"
                   >
                     <div className="font-medium flex items-center">
-                      Searchable PDF
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
-                        Recommended
+                      Editable Word Document
+                      <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">
+                        New!
                       </span>
                     </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Professional formatting, fully editable
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleExportClick('searchable')}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-600"
+                  >
+                    <div className="font-medium">Searchable PDF</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       Text-based, can be imported back
                     </div>

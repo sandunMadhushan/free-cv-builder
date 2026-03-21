@@ -1,7 +1,7 @@
 import html2pdf from 'html2pdf.js';
 
 /**
- * Generate and download PDF from the CV preview with searchable text
+ * Generate and download high-quality visual PDF from the CV preview
  * @param {string} filename - Optional custom filename
  * @param {string} elementId - ID of the element to export (default: 'cv-preview-print')
  */
@@ -13,9 +13,9 @@ export const generatePDF = async (filename = 'resume.pdf', elementId = 'cv-previ
       throw new Error('CV preview element not found. Please make sure the CV is loaded.');
     }
 
-    // Configuration for searchable PDF output
+    // Configuration optimized for beautiful visual output (fixed blank PDF issue)
     const options = {
-      margin: [10, 10, 10, 10], // Add small margins
+      margin: 10,
       filename: filename,
       image: {
         type: 'jpeg',
@@ -26,26 +26,12 @@ export const generatePDF = async (filename = 'resume.pdf', elementId = 'cv-previ
         useCORS: true,
         letterRendering: true,
         allowTaint: false,
-        backgroundColor: '#ffffff',
-        removeContainer: true,
-        logging: false,
-        // Important: preserve text for searchability
-        preserveDrawingBuffer: true,
-        foreignObjectRendering: true
+        backgroundColor: '#ffffff'
       },
       jsPDF: {
         unit: 'mm',
         format: 'a4',
-        orientation: 'portrait',
-        compress: false, // Don't compress to preserve text quality
-        // Add metadata for better parsing
-        userUnit: 1.0
-      },
-      pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy'],
-        before: '.page-break-before',
-        after: '.page-break-after',
-        avoid: '.page-break-avoid'
+        orientation: 'portrait'
       }
     };
 
