@@ -19,19 +19,58 @@ export const ImportResume = () => {
 
   // PDF text extraction function using PDF.js
   const extractTextFromPDF = async (file) => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
+    try {
+      const arrayBuffer = await file.arrayBuffer();
 
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n';
+      // Configure PDF.js options
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        cMapUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/cmaps/',
+        cMapPacked: true,
+        verbosity: 0 // Reduce console output
+      });
+
+      const pdf = await loadingTask.promise;
+      let fullText = '';
+      let hasActualText = false;
+
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        if (textContent.items.length > 0) {
+          const pageText = textContent.items
+            .map(item => item.str)
+            .filter(str => str.trim())
+            .join(' ');
+
+          if (pageText.trim()) {
+            fullText += pageText + '\n';
+            hasActualText = true;
+          }
+        }
+      }
+
+      // Check if we actually got meaningful text
+      if (!hasActualText || fullText.trim().length < 20) {
+        throw new Error('This PDF appears to be a scanned image without searchable text. Please try converting it to a text-based PDF or use a different format.');
+      }
+
+      return fullText;
+    } catch (error) {
+      console.error('PDF parsing detailed error:', error);
+
+      if (error.message.includes('scanned image')) {
+        throw error;
+      } else if (error.name === 'InvalidPDFException') {
+        throw new Error('Invalid or corrupted PDF file. Please try with a different PDF.');
+      } else if (error.name === 'PasswordException') {
+        throw new Error('This PDF is password protected. Please remove the password and try again.');
+      } else {
+        throw new Error(`PDF parsing failed: ${error.message || 'Unknown error'}. Please try with a different file format.`);
+      }
     }
-
-    return fullText;
   };
 
   // Enhanced text extraction patterns
@@ -228,11 +267,13 @@ export const ImportResume = () => {
         text = await file.text();
       } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
         // PDF file parsing using PDF.js
+        setStatusMessage('Extracting text from PDF...');
         try {
           text = await extractTextFromPDF(file);
+          console.log('PDF text extraction successful, length:', text.length);
         } catch (pdfError) {
           console.error('PDF parsing error:', pdfError);
-          throw new Error('Unable to parse PDF file. Please ensure it contains searchable text (not a scanned image).');
+          throw pdfError; // Re-throw the specific error from extractTextFromPDF
         }
       } else if (
         fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -260,9 +301,25 @@ export const ImportResume = () => {
         return;
       }
 
-      // Validate extracted text
-      if (!text || text.trim().length < 50) {
-        throw new Error('Unable to extract meaningful text from the document. Please ensure the file contains readable text.');
+      // Validate extracted text with better debugging
+      if (!text || text.trim().length < 20) {
+        console.log('Extracted text length:', text?.length);
+        console.log('Extracted text preview:', text?.substring(0, 200));
+        throw new Error(`Unable to extract sufficient text from the document.
+
+Extracted: ${text?.length || 0} characters
+File type: ${fileType}
+File name: ${fileName}
+
+This might happen if:
+• The PDF is a scanned image (use OCR first)
+• The document is password protected
+• The file is corrupted or in an unsupported format
+
+Please try:
+• Converting to a text-based PDF
+• Using a DOCX or TXT file instead
+• Checking if the file opens normally in a PDF reader`);
       }
 
       setStatusMessage('Analyzing resume content...');
