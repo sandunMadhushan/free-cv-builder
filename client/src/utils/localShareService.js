@@ -13,7 +13,7 @@ class LocalShareService {
       const shareId = nanoid(10);
 
       // Clean up CV data (remove empty sections, etc.)
-      const cleanCVData = this.cleanCVData(cvData);
+      const cleanCVData = this._cleanCVData(cvData);
 
       // Create complete share package with styling
       const sharePackage = {
@@ -24,7 +24,7 @@ class LocalShareService {
       };
 
       // Compress and encode complete package
-      const encodedData = this.encodeData(sharePackage);
+      const encodedData = this._encodeData(sharePackage);
 
       // Create share URL with data as a parameter
       const baseUrl = window.location.origin + window.location.pathname;
@@ -57,7 +57,7 @@ class LocalShareService {
     }
   }
 
-  // Clean CV data by removing empty sections and unnecessary data
+  // Clean CSV data (public method for external use)
   cleanCVData(cvData) {
     const cleaned = { ...cvData };
 
@@ -87,7 +87,12 @@ class LocalShareService {
     return dataOnly;
   }
 
-  // Encode complete data package for URL
+  // Internal clean CV data (keeping for backward compatibility)
+  _cleanCVData(cvData) {
+    return this.cleanCVData(cvData);
+  }
+
+  // Encode complete data package for URL (public method)
   encodeData(data) {
     try {
       const jsonString = JSON.stringify(data);
@@ -96,6 +101,11 @@ class LocalShareService {
     } catch (error) {
       throw new Error('Failed to encode share data');
     }
+  }
+
+  // Internal encode function (keeping for backward compatibility)
+  _encodeData(data) {
+    return this.encodeData(data);
   }
 
   // Decode complete data package from URL

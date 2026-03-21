@@ -11,7 +11,6 @@ import { SectionManager } from './SectionManager';
 import { Customization } from '../customization/Customization';
 import { ImportResume } from '../features/ImportResume';
 import { VersionManager } from '../features/VersionManager';
-import { ShareManager } from '../features/ShareManager';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -27,7 +26,6 @@ export const SidebarForm = () => {
     { id: 'languages', label: 'Languages', component: LanguagesForm },
     { id: 'import', label: 'Import Resume', component: ImportResume },
     { id: 'versions', label: 'My CVs', component: VersionManager },
-    { id: 'share', label: 'Share CV', component: ShareManager },
     { id: 'customize', label: 'Customize', component: Customization },
     { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];

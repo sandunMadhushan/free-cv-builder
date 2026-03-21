@@ -11,16 +11,73 @@ export const ShareManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [shares, setShares] = useState({});
   const [shareStatus, setShareStatus] = useState({ type: null, message: '' });
+  const [hasChanges, setHasChanges] = useState(false);
 
   const cvData = useCVStore();
   const themeData = useThemeStore();
   const templateData = useTemplateStore();
 
-  // Load existing shares on component mount
+  // Get current data for comparison
+  const getCurrentShareData = () => {
+    return {
+      cv: localShareService.cleanCVData(cvData),
+      theme: {
+        isDark: themeData.isDark,
+        theme: themeData.theme,
+        previewIsDark: themeData.previewIsDark,
+        previewTheme: themeData.previewTheme
+      },
+      template: {
+        selectedTemplate: templateData.selectedTemplate,
+        customization: templateData.customization,
+        showPhoto: templateData.showPhoto,
+        pageSize: templateData.pageSize
+      }
+    };
+  };
+
+  // Check if current data differs from existing share
+  const detectChanges = () => {
+    const currentShare = shareData || Object.values(shares)[0] || null;
+    if (!currentShare?.shareUrl) {
+      setHasChanges(false);
+      return;
+    }
+
+    try {
+      // Extract data from existing share URL
+      const urlParams = new URLSearchParams(new URL(currentShare.shareUrl).search);
+      const encodedData = urlParams.get('data');
+      if (!encodedData) {
+        setHasChanges(true);
+        return;
+      }
+
+      const existingData = localShareService.decodeData(encodedData);
+      const currentData = getCurrentShareData();
+
+      // Compare the data
+      const existingString = JSON.stringify(existingData);
+      const currentString = JSON.stringify({ ...currentData, version: '1.0' });
+
+      setHasChanges(existingString !== currentString);
+    } catch (error) {
+      console.error('Error detecting changes:', error);
+      setHasChanges(true); // Assume changes if we can't detect
+    }
+  };
+
+  // Load existing shares and detect changes
   useEffect(() => {
     const existingShares = localShareService.getShares();
     setShares(existingShares);
+    detectChanges();
   }, []);
+
+  // Detect changes whenever CV data changes
+  useEffect(() => {
+    detectChanges();
+  }, [cvData, themeData, templateData, shareData, shares]);
 
   // Generate share link
   const generateShareLink = async () => {
@@ -47,14 +104,20 @@ export const ShareManager = () => {
 
       if (result.success) {
         setShareData(result.data);
+        setHasChanges(false); // Reset change detection since we just created a fresh link
         setShareStatus({
           type: 'success',
-          message: 'Share link generated with styling preserved!'
+          message: '🎉 Share link generated successfully with complete styling preserved!'
         });
 
         // Update local shares list
         const updatedShares = localShareService.getShares();
         setShares(updatedShares);
+
+        // Clear status after 4 seconds
+        setTimeout(() => {
+          setShareStatus({ type: null, message: '' });
+        }, 4000);
       } else {
         throw new Error(result.error);
       }
@@ -70,24 +133,31 @@ export const ShareManager = () => {
 
   // Remove share link
   const removeShareLink = async () => {
-    if (!shareData?.shareId) return;
+    const currentShare = shareData || Object.values(shares)[0] || null;
+    if (!currentShare?.shareId) return;
 
     setIsLoading(true);
     setShareStatus({ type: null, message: '' });
 
     try {
-      const result = localShareService.removeShare(shareData.shareId);
+      const result = localShareService.removeShare(currentShare.shareId);
 
       if (result.success) {
         setShareData(null);
         setShareStatus({
           type: 'success',
-          message: 'Share link removed successfully'
+          message: 'Share link removed successfully!'
         });
 
-        // Update local shares list
+        // Update local shares list and reset change detection
         const updatedShares = localShareService.getShares();
         setShares(updatedShares);
+        setHasChanges(false);
+
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          setShareStatus({ type: null, message: '' });
+        }, 3000);
       } else {
         throw new Error(result.error);
       }
@@ -101,18 +171,114 @@ export const ShareManager = () => {
     }
   };
 
-  // Copy share link to clipboard
-  const copyShareLink = async () => {
-    if (!shareData?.shareUrl) return;
+  // Generate temporary preview with latest CV data
+  const generateLivePreview = async () => {
+    try {
+      const currentData = getCurrentShareData();
+
+      // Generate temporary share package
+      const sharePackage = {
+        ...currentData,
+        version: '1.0'
+      };
+
+      const encodedData = localShareService.encodeData(sharePackage);
+      const baseUrl = window.location.origin + window.location.pathname;
+      const tempUrl = `${baseUrl}?share=preview&data=${encodedData}`;
+
+      window.open(tempUrl, '_blank');
+
+      setShareStatus({
+        type: 'success',
+        message: 'Live preview opened with your current CV!'
+      });
+
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        setShareStatus({ type: null, message: '' });
+      }, 3000);
+    } catch (error) {
+      setShareStatus({
+        type: 'error',
+        message: 'Failed to open preview. Please try again.'
+      });
+    }
+  };
+
+  // Update existing share link with current data
+  const updateShareLink = async () => {
+    const currentShare = shareData || Object.values(shares)[0] || null;
+    if (!currentShare?.shareId) return;
+
+    if (!hasChanges) {
+      setShareStatus({
+        type: 'success',
+        message: 'Your share link is already up to date! No changes detected.'
+      });
+      setTimeout(() => {
+        setShareStatus({ type: null, message: '' });
+      }, 4000);
+      return;
+    }
+
+    setIsLoading(true);
+    setShareStatus({ type: null, message: '' });
 
     try {
-      const result = await localShareService.copyToClipboard(shareData.shareUrl);
+      // Remove old share
+      localShareService.removeShare(currentShare.shareId);
+
+      // Generate new share with current data
+      const currentData = getCurrentShareData();
+      const result = localShareService.generateShareLink(cvData, currentData.theme, currentData.template);
+
+      if (result.success) {
+        setShareData(result.data);
+        setHasChanges(false); // Reset change detection
+        setShareStatus({
+          type: 'success',
+          message: '🎉 Share link updated successfully with all your latest changes!'
+        });
+
+        // Update local shares list
+        const updatedShares = localShareService.getShares();
+        setShares(updatedShares);
+
+        // Clear status after 5 seconds for success message
+        setTimeout(() => {
+          setShareStatus({ type: null, message: '' });
+        }, 5000);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      setShareStatus({
+        type: 'error',
+        message: `Failed to update share link: ${error.message}`
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Copy share link to clipboard
+  const copyShareLink = async () => {
+    const currentShare = shareData || Object.values(shares)[0] || null;
+    if (!currentShare?.shareUrl) return;
+
+    try {
+      const result = await localShareService.copyToClipboard(currentShare.shareUrl);
 
       if (result.success) {
         setShareStatus({
           type: 'success',
-          message: 'Share link copied to clipboard!'
+          message: '📋 Share link copied to clipboard!'
         });
+
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          setShareStatus({ type: null, message: '' });
+        }, 3000);
       } else {
         throw new Error(result.error);
       }
@@ -193,15 +359,72 @@ export const ShareManager = () => {
               </p>
             </div>
 
+            {/* Update notification - only show if there are changes */}
+            {hasChanges ? (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 text-amber-600 dark:text-amber-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <strong>Changes detected!</strong> Click "Update Link" to include your latest changes
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 text-green-600 dark:text-green-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    <strong>All up to date!</strong> Your share link includes all current changes
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Share Actions */}
-            <div className="flex gap-3">
+            <div className={hasChanges ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
               <Button
-                onClick={() => window.open(currentShare.shareUrl, '_blank')}
+                onClick={generateLivePreview}
                 variant="outline"
-                className="flex-1"
+                className="flex items-center justify-center"
               >
-                Preview
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Live Preview
               </Button>
+              {hasChanges && (
+                <Button
+                  onClick={updateShareLink}
+                  variant="primary"
+                  disabled={isLoading}
+                  className="flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Update Link
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            <div className="flex gap-3">
               <Button
                 onClick={removeShareLink}
                 variant="danger"
@@ -245,15 +468,17 @@ export const ShareManager = () => {
 
       {/* Sharing Tips */}
       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-        <h3 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2">🎨 Complete Styling Preservation</h3>
+        <h3 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2">🎨 Smart Sharing Features</h3>
         <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
           <li>• <strong>Template & colors preserved:</strong> Recipients see the exact same design</li>
           <li>• <strong>Theme included:</strong> Dark/light mode preference is maintained</li>
+          <li>• <strong>Live Preview:</strong> Preview button always shows your current CV</li>
+          <li>• <strong>Smart updates:</strong> "Update Link" only appears when you have changes</li>
+          <li>• <strong>Change detection:</strong> Automatically detects CV, styling, and template changes</li>
           <li>• <strong>No server needed:</strong> All data encoded directly into the URL</li>
           <li>• <strong>Works offline:</strong> Links work without any external services</li>
           <li>• <strong>Privacy first:</strong> Your data never touches any server</li>
           <li>• <strong>Universal compatibility:</strong> Works in any modern web browser</li>
-          <li>• <strong>Auto-regenerates:</strong> Links update when you change styling</li>
           <li>• Be mindful of URL length limits on some messaging platforms</li>
         </ul>
       </div>

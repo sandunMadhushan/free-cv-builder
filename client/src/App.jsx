@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
+import { ShareOverlay } from './components/layout/ShareOverlay';
 import { SplitScreenLayout } from './components/layout/SplitScreenLayout';
 import { SidebarForm } from './components/form/SidebarForm';
 import { CVPreview } from './components/preview/CVPreview';
@@ -15,6 +16,7 @@ function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState(null); // success | error
   const [exportMessage, setExportMessage] = useState('');
+  const [isShareOverlayOpen, setIsShareOverlayOpen] = useState(false);
 
   const cvData = useCVStore();
   const { resetCV, loadCV } = useCVStore();
@@ -125,6 +127,14 @@ function App() {
     setExportMessage('');
   };
 
+  const handleShare = () => {
+    setIsShareOverlayOpen(true);
+  };
+
+  const closeShareOverlay = () => {
+    setIsShareOverlayOpen(false);
+  };
+
   // Now setup keyboard shortcuts with the defined functions
   useGlobalKeyboardShortcuts(
     handleExport, // Ctrl+P or Ctrl+E
@@ -141,6 +151,7 @@ function App() {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header
         onExport={handleExport}
+        onShare={handleShare}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -151,6 +162,12 @@ function App() {
       </div>
 
       <Footer />
+
+      {/* Share Overlay */}
+      <ShareOverlay
+        isOpen={isShareOverlayOpen}
+        onClose={closeShareOverlay}
+      />
 
       {/* Loading overlay during export */}
       {isExporting && (
