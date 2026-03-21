@@ -1,1 +1,45 @@
-{}
+{
+  "name": "cv-builder-monorepo",
+  "version": "1.0.0",
+  "description": "A modern CV Builder application with React frontend and Node.js backend",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "start": "concurrently \"npm run server:start\" \"npm run client:start\"",
+    "build": "npm run client:build && npm run server:build",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "client:preview": "cd client && npm run preview",
+    "client:start": "cd client && npm run build && npm run preview",
+    "server:dev": "cd server && npm run dev",
+    "server:start": "cd server && npm start",
+    "server:build": "cd server && echo 'No build step required for server'",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "clean": "rm -rf client/dist client/node_modules server/node_modules node_modules",
+    "lint": "cd client && npm run lint",
+    "test": "echo \"No tests specified yet\"",
+    "postinstall": "cd client && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "cv",
+    "resume",
+    "builder",
+    "react",
+    "node.js",
+    "mongodb",
+    "tailwind"
+  ],
+  "author": "CV Builder Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sandunMadhushan/free-cv-builder.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { SplitScreenLayout } from './components/layout/SplitScreenLayout';
 import { SidebarForm } from './components/form/SidebarForm';
 import { CVPreview } from './components/preview/CVPreview';
 import { generatePDF, validateCVForExport, suggestFilename } from './utils/pdfGenerator';
 import { useCVStore } from './store/cvStore';
+import { useThemeStore } from './store/themeStore';
+import { useGlobalKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 function App() {
   const [isExporting, setIsExporting] = useState(false);
@@ -12,7 +14,15 @@ function App() {
   const [exportMessage, setExportMessage] = useState('');
 
   const cvData = useCVStore();
+  const { resetCV } = useCVStore();
+  const { initializeTheme } = useThemeStore();
 
+  // Initialize theme on app load
+  useEffect(() => {
+    initializeTheme();
+  }, [initializeTheme]);
+
+  // Define functions first
   const handleExport = async () => {
     setIsExporting(true);
     setExportStatus(null);
@@ -55,8 +65,20 @@ function App() {
     setExportMessage('');
   };
 
+  // Now setup keyboard shortcuts with the defined functions
+  useGlobalKeyboardShortcuts(
+    handleExport, // Ctrl+P or Ctrl+E
+    () => {
+      // Auto-save is already handled by Zustand, just show feedback
+      setExportStatus('success');
+      setExportMessage('CV auto-saved successfully!');
+      setTimeout(() => setExportStatus(null), 2000);
+    }, // Ctrl+S
+    resetCV // Ctrl+Shift+R
+  );
+
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header onExport={handleExport} />
 
       <SplitScreenLayout

@@ -11,6 +11,7 @@ import { SectionManager } from './SectionManager';
 import { Customization } from '../customization/Customization';
 import { ImportResume } from '../features/ImportResume';
 import { VersionManager } from '../features/VersionManager';
+import { ShareManager } from '../features/ShareManager';
 
 export const SidebarForm = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -26,6 +27,7 @@ export const SidebarForm = () => {
     { id: 'languages', label: 'Languages', component: LanguagesForm },
     { id: 'import', label: 'Import Resume', component: ImportResume },
     { id: 'versions', label: 'My CVs', component: VersionManager },
+    { id: 'share', label: 'Share CV', component: ShareManager },
     { id: 'customize', label: 'Customize', component: Customization },
     { id: 'sections', label: 'Manage Sections', component: SectionManager },
   ];
@@ -35,16 +37,17 @@ export const SidebarForm = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 lg:mb-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
+              px-3 lg:px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium whitespace-nowrap transition-colors
+              min-w-fit flex-shrink-0 touch-manipulation
               ${activeTab === tab.id
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'border-b-2 border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
               }
             `}
           >

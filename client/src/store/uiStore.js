@@ -90,9 +90,9 @@ export const useUIStore = create(
         })),
 
       // Mobile preview toggle
-      toggleMobilePreview: () =>
+      toggleMobilePreview: (forceState = null) =>
         set((state) => ({
-          isMobilePreviewOpen: !state.isMobilePreviewOpen,
+          isMobilePreviewOpen: forceState !== null ? forceState : !state.isMobilePreviewOpen,
         })),
 
       // Reset UI state
