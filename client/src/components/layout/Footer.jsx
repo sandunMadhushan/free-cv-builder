@@ -58,8 +58,58 @@ export const Footer = () => {
                   text: "✅ Authentication successful! Starring repository...",
                 });
 
-                // Proceed with starring after short delay
-                setTimeout(() => handleStarRepo(true), 1500);
+                // Wait longer for state to update, then verify auth before starring
+                setTimeout(async () => {
+                  console.log("🔍 Verifying authentication state before starring...");
+
+                  // Double-check auth status to ensure session is properly established
+                  const authVerification = await checkAuthStatus();
+
+                  if (authVerification) {
+                    console.log("✅ Authentication verified, proceeding to star");
+                    handleStarRepo(true);
+                  } else {
+                    console.log("❌ Authentication verification failed, trying direct star API call");
+
+                    // If session verification fails, try starring directly since we know backend session exists
+                    try {
+                      const starResponse = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
+                        method: "POST",
+                        credentials: "include",
+                        headers: { "Content-Type": "application/json" }
+                      });
+
+                      if (starResponse.ok) {
+                        const starData = await starResponse.json();
+                        console.log("✅ Direct star API call successful:", starData);
+
+                        setStarMessage({
+                          type: "success",
+                          text: "⭐ Repository starred successfully!",
+                        });
+
+                        // Update UI state
+                        setIsAuthenticated(true);
+                        setUser(data.user);
+                        setIsStarred(true);
+                        if (starData.starCount) {
+                          setStarCount(starData.starCount);
+                        }
+
+                        // Refresh star count after delay
+                        setTimeout(fetchStarCount, 2000);
+                      } else {
+                        throw new Error("Star API call failed");
+                      }
+                    } catch (starError) {
+                      console.error("❌ Direct star API call failed:", starError);
+                      setStarMessage({
+                        type: "info",
+                        text: "❌ Authentication succeeded but starring failed. Please click the star button to try again.",
+                      });
+                    }
+                  }
+                }, 2500); // Increased delay for state updates
                 return;
               }
             }
