@@ -747,6 +747,13 @@ class GitHubController {
    */
   checkStarStatus = async (req, res) => {
     try {
+      // Set cache control headers to prevent caching of star status
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+
       // Try to get access token from session first, then Authorization header as fallback
       let accessToken = req.session.githubAccessToken;
 
@@ -761,6 +768,12 @@ class GitHubController {
         console.log('🔑 Using access token from session for star status check');
       }
 
+      console.log('⭐ Checking star status - ensuring fresh data from GitHub API', {
+        hasAccessToken: !!accessToken,
+        timestamp: new Date().toISOString(),
+        cacheControlSet: true
+      });
+
       if (!accessToken) {
         return res.json({
           authenticated: false,
@@ -770,31 +783,53 @@ class GitHubController {
       }
 
       try {
+        console.log('🌟 Making fresh GitHub API call to check star status...');
         const response = await axios.get(
           `${this.githubApiBaseUrl}/user/starred/${this.repoOwner}/${this.repoName}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Cache-Control': 'no-cache'  // Ensure fresh data from GitHub
             },
           }
         );
 
+        console.log('✅ GitHub API star status response:', {
+          status: response.status,
+          isStarred: response.status === 200,
+          timestamp: new Date().toISOString()
+        });
+
         // If we get a 200, the repo is starred
-        res.json({
+        return res.json({
           authenticated: true,
           isStarred: response.status === 200,
-          message: 'Repository is starred'
+          message: 'Repository is starred',
+          timestamp: new Date().toISOString()
         });
       } catch (error) {
         if (error.response?.status === 404) {
+          console.log('📭 GitHub API returned 404 - repository is NOT starred:', {
+            status: 404,
+            isStarred: false,
+            timestamp: new Date().toISOString()
+          });
+
           // 404 means not starred
-          res.json({
+          return res.json({
             authenticated: true,
             isStarred: false,
-            message: 'Repository is not starred'
+            message: 'Repository is not starred',
+            timestamp: new Date().toISOString()
           });
         } else {
+          console.error('❌ Error checking star status:', {
+            status: error.response?.status,
+            message: error.message,
+            timestamp: new Date().toISOString()
+          });
           throw error;
         }
       }

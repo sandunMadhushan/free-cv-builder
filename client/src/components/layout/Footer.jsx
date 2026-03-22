@@ -119,11 +119,15 @@ export const Footer = () => {
                       console.log("🔍 Making star status check request...");
 
                       const statusResponse = await fetch(
-                        `${API_BASE_URL}/api/auth/repo/star/status`,
+                        `${API_BASE_URL}/api/auth/repo/star/status?t=${Date.now()}`,
                         {
                           method: "GET",
                           credentials: "include",
-                          headers: statusHeaders,
+                          headers: {
+                            ...statusHeaders,
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                          },
                         },
                       );
 
@@ -442,11 +446,15 @@ export const Footer = () => {
             console.log("🔍 Making session star status check request...");
 
             const statusResponse = await fetch(
-              `${API_BASE_URL}/api/auth/repo/star/status`,
+              `${API_BASE_URL}/api/auth/repo/star/status?t=${Date.now()}`,
               {
                 method: "GET",
                 credentials: "include",
-                headers: statusHeaders,
+                headers: {
+                  ...statusHeaders,
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache'
+                },
               },
             );
 
@@ -562,11 +570,15 @@ export const Footer = () => {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/auth/repo/star/status`,
+        `${API_BASE_URL}/api/auth/repo/star/status?t=${Date.now()}`,
         {
           method: "GET",
           credentials: "include",
-          headers,
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
         },
       );
       const data = await response.json();
@@ -704,11 +716,15 @@ export const Footer = () => {
       }
 
       const statusResponse = await fetch(
-        `${API_BASE_URL}/api/auth/repo/star/status`,
+        `${API_BASE_URL}/api/auth/repo/star/status?t=${Date.now()}`,
         {
           method: "GET",
           credentials: "include",
-          headers: statusHeaders,
+          headers: {
+            ...statusHeaders,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
         },
       );
 
