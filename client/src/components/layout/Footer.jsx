@@ -179,7 +179,11 @@ export const Footer = () => {
       return;
     }
 
-    console.log("handleStarRepo called:", { isAuthenticated, skipAuthCheck });
+    console.log("🎯 handleStarRepo called:", {
+      isAuthenticated,
+      skipAuthCheck,
+      source: skipAuthCheck ? 'automatic' : 'button-click'
+    });
 
     // Always check if user is actually authenticated before proceeding with starring
     // skipAuthCheck only means we skip showing the OAuth popup, not the authentication requirement
@@ -194,52 +198,91 @@ export const Footer = () => {
         return;
       }
 
-      console.log("User not authenticated, initiating OAuth...");
+      console.log("🔐 User not authenticated, initiating OAuth...");
+
+      // Clear any existing message handlers to prevent conflicts
+      const existingHandlers = window.githubAuthHandlers || [];
+      existingHandlers.forEach(handler => {
+        window.removeEventListener("message", handler);
+      });
+      window.githubAuthHandlers = [];
+
       // Initiate GitHub OAuth flow
       try {
+        console.log("📡 Fetching GitHub auth URL...");
         const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
           method: "GET",
           credentials: "include",
         });
         const data = await response.json();
+        console.log("🔑 Auth response:", data);
 
         if (data.success && data.authUrl) {
+          console.log("🚀 Opening OAuth popup...");
+
           // Open GitHub OAuth in a popup
           const popup = window.open(
             data.authUrl,
             "github-auth",
-            "width=600,height=700,scrollbars=yes,resizable=yes",
+            "width=600,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,status=no"
           );
 
+          // Check if popup was blocked
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            console.error("❌ Popup was blocked by browser");
+            setStarMessage({
+              type: "info",
+              text: "❌ Please allow popups and try again. Your browser blocked the authentication window.",
+            });
+            return;
+          }
+
+          console.log("✅ Popup opened successfully");
+
+          let checkClosedInterval;
+
           // Listen for the popup to close or receive a message
-          const checkClosed = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(checkClosed);
-              // Check if auth was successful
-              setTimeout(async () => {
-                const authResult = await checkAuthStatus();
-                if (authResult) {
-                  // Try to star after successful auth
-                  setTimeout(() => handleStarRepo(true), 500);
-                }
-              }, 1000);
+          checkClosedInterval = setInterval(() => {
+            try {
+              if (popup.closed) {
+                console.log("🔍 Popup closed, checking auth status...");
+                clearInterval(checkClosedInterval);
+                // Check if auth was successful
+                setTimeout(async () => {
+                  const authResult = await checkAuthStatus();
+                  if (authResult) {
+                    console.log("✅ Auth successful via popup close detection");
+                    // Try to star after successful auth
+                    setTimeout(() => handleStarRepo(true), 500);
+                  } else {
+                    console.log("❌ Auth not successful after popup close");
+                  }
+                }, 1000);
+              }
+            } catch (error) {
+              // Popup might be from different origin, ignore cross-origin errors
+              console.log("Popup check error (likely cross-origin):", error.message);
             }
           }, 1000);
 
           // Listen for messages from the popup (callback from backend)
           const handleMessage = (event) => {
+            console.log("📨 Received message from popup:", event.data);
+
             // Accept messages from our backend domain
             const backendDomain = new URL(API_BASE_URL).origin;
             if (
               event.origin !== window.location.origin &&
               event.origin !== backendDomain
             ) {
+              console.log("🚫 Ignoring message from unauthorized origin:", event.origin);
               return;
             }
 
             if (event.data.type === "github-auth-success") {
+              console.log("🎉 GitHub auth success message received");
               popup.close();
-              clearInterval(checkClosed);
+              clearInterval(checkClosedInterval);
 
               // Show success message
               setStarMessage({
@@ -249,10 +292,10 @@ export const Footer = () => {
 
               // Get user data from popup
               const userData = event.data.user;
-              console.log("Received user data from popup:", userData);
+              console.log("👤 Received user data from popup:", userData);
 
               if (!userData || !userData.access_token) {
-                console.error("No user data received from popup");
+                console.error("❌ No user data received from popup");
                 setStarMessage({
                   type: "info",
                   text: "❌ Authentication failed - no user data received",
@@ -265,8 +308,9 @@ export const Footer = () => {
             }
 
             if (event.data.type === "github-auth-error") {
+              console.log("❌ GitHub auth error message received");
               popup.close();
-              clearInterval(checkClosed);
+              clearInterval(checkClosedInterval);
 
               setStarMessage({
                 type: "info",
@@ -274,18 +318,27 @@ export const Footer = () => {
               });
             }
 
+            // Clean up this specific handler
             window.removeEventListener("message", handleMessage);
+            window.githubAuthHandlers = window.githubAuthHandlers?.filter(h => h !== handleMessage) || [];
           };
 
+          // Store handler reference for cleanup
+          window.githubAuthHandlers = window.githubAuthHandlers || [];
+          window.githubAuthHandlers.push(handleMessage);
+
           window.addEventListener("message", handleMessage);
+
+          console.log("👂 Message listener added for OAuth callback");
         } else {
+          console.error("❌ Failed to get auth URL:", data);
           setStarMessage({
             type: "info",
             text: "❌ Failed to initiate GitHub authentication",
           });
         }
       } catch (error) {
-        console.error("GitHub auth error:", error);
+        console.error("❌ GitHub auth error:", error);
         setStarMessage({
           type: "info",
           text: "❌ Failed to connect to authentication service",

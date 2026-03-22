@@ -76,6 +76,10 @@
    GITHUB_CLIENT_ID=your_github_client_id
    GITHUB_CLIENT_SECRET=your_github_client_secret
    GITHUB_CALLBACK_URL=https://cv-builder-api-fexd.onrender.com/api/auth/github/callback
+
+   # GitHub API Token (Optional - for higher rate limits)
+   # Generate at: https://github.com/settings/tokens (no scopes needed for public repos)
+   GITHUB_TOKEN=ghp_your_personal_access_token_here
    ```
 
 4. **Deploy**
@@ -109,6 +113,34 @@
      GITHUB_CLIENT_ID=your_actual_client_id_from_github
      GITHUB_CLIENT_SECRET=your_actual_client_secret_from_github
      ```
+
+### Step 3.5: Create GitHub Personal Access Token (Optional - Recommended)
+
+This step increases GitHub API rate limits from 60/hour to 5000/hour for star count fetching:
+
+1. **Go to GitHub Personal Access Tokens**
+   - GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → "Generate new token (classic)"
+
+2. **Configure Token Settings:**
+   ```
+   Note: CV Builder API Token
+   Expiration: No expiration (or choose your preference)
+   Scopes: ❌ NO SCOPES NEEDED (leave all unchecked for public repo access)
+   ```
+
+3. **Generate Token**
+   - Click "Generate token"
+   - **Copy the token immediately** (you won't see it again)
+   - Token will look like: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+4. **Add Token to Render Environment:**
+   - Go to Render dashboard → your service → Environment
+   - Add this variable:
+     ```bash
+     GITHUB_TOKEN=ghp_your_actual_token_from_github
+     ```
+
+> **Note:** This token is optional but highly recommended. Without it, you may hit rate limits if many users visit your site simultaneously.
 
 ### Step 4: Update Frontend Environment
 
@@ -197,6 +229,7 @@
 | `GITHUB_CLIENT_ID` | OAuth Client ID | From GitHub OAuth app | ✅ |
 | `GITHUB_CLIENT_SECRET` | OAuth Client Secret | From GitHub OAuth app | ✅ |
 | `GITHUB_CALLBACK_URL` | OAuth callback | `https://cv-builder-api-fexd.onrender.com/api/auth/github/callback` | ✅ |
+| `GITHUB_TOKEN` | API rate limits | Personal Access Token | ⚡ Optional (Recommended) |
 
 ## Troubleshooting
 

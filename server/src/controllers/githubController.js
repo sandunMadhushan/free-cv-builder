@@ -470,13 +470,24 @@ class GitHubController {
     try {
       console.log('🌟 Fetching star count for repository:', `${this.repoOwner}/${this.repoName}`);
 
+      // Use GitHub token if available to increase rate limits (60/hour -> 5000/hour)
+      const headers = {
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'CV-Builder-App'
+      };
+
+      // Add authorization header if GitHub token is available
+      if (process.env.GITHUB_TOKEN) {
+        headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+        console.log('🔑 Using GitHub token for enhanced rate limits');
+      } else {
+        console.log('⚠️  No GitHub token - using public rate limits (60/hour)');
+      }
+
       const response = await axios.get(
         `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`,
         {
-          headers: {
-            'Accept': 'application/vnd.github+json',
-            'User-Agent': 'CV-Builder-App'
-          },
+          headers,
           timeout: 10000, // 10 second timeout
         }
       );
@@ -494,7 +505,8 @@ class GitHubController {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        URL: `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`
+        URL: `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`,
+        hasToken: !!process.env.GITHUB_TOKEN
       });
 
       // Return success with fallback data instead of 500 error
