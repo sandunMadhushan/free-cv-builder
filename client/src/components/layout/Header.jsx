@@ -67,9 +67,9 @@ export const Header = ({ onExport, onShare }) => {
           </Tooltip>
 
           {/* Export button */}
-          <Tooltip content="Export PDF (Ctrl+P)" position="bottom">
+          <Tooltip content="Export CV (PDF or DOCX)" position="bottom">
             <Button variant="primary" size="sm" onClick={onExport}>
-              Export PDF
+              Export CV
             </Button>
           </Tooltip>
 

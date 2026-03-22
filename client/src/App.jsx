@@ -5,6 +5,7 @@ import { ShareOverlay } from "./components/layout/ShareOverlay";
 import { SplitScreenLayout } from "./components/layout/SplitScreenLayout";
 import { SidebarForm } from "./components/form/SidebarForm";
 import { CVPreview } from "./components/preview/CVPreview";
+import { ProfessionalExportModal } from "./components/export/ProfessionalExportModal";
 import {
   generatePDF,
   validateCVForExport,
@@ -21,6 +22,7 @@ function App() {
   const [exportStatus, setExportStatus] = useState(null); // success | error
   const [exportMessage, setExportMessage] = useState("");
   const [isShareOverlayOpen, setIsShareOverlayOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const cvData = useCVStore();
   const { resetCV, loadCV } = useCVStore();
@@ -92,43 +94,8 @@ function App() {
   }, [loadCV, setTheme, templateStore]);
 
   // Define functions first
-  const handleExport = async () => {
-    setIsExporting(true);
-    setExportStatus(null);
-    setExportMessage("");
-
-    try {
-      // Validate CV data before export
-      const validation = validateCVForExport(cvData);
-
-      if (!validation.isValid) {
-        setExportStatus("error");
-        setExportMessage(
-          `Please fix the following issues before exporting:\n• ${validation.issues.join("\n• ")}`,
-        );
-        return;
-      }
-
-      // Generate suggested filename
-      const filename = suggestFilename(cvData);
-
-      // Generate and download PDF
-      const result = await generatePDF(filename);
-
-      if (result.success) {
-        setExportStatus("success");
-        setExportMessage(result.message);
-      } else {
-        setExportStatus("error");
-        setExportMessage(result.message);
-      }
-    } catch (error) {
-      console.error("Export error:", error);
-      setExportStatus("error");
-      setExportMessage(`An unexpected error occurred: ${error.message}`);
-    } finally {
-      setIsExporting(false);
-    }
+  const handleExport = () => {
+    setIsExportModalOpen(true);
   };
 
   const closeStatusMessage = () => {
@@ -142,6 +109,10 @@ function App() {
 
   const closeShareOverlay = () => {
     setIsShareOverlayOpen(false);
+  };
+
+  const closeExportModal = () => {
+    setIsExportModalOpen(false);
   };
 
   // Now setup keyboard shortcuts with the defined functions
@@ -171,6 +142,12 @@ function App() {
 
       {/* Share Overlay */}
       <ShareOverlay isOpen={isShareOverlayOpen} onClose={closeShareOverlay} />
+
+      {/* Export Modal */}
+      <ProfessionalExportModal
+        isOpen={isExportModalOpen}
+        onClose={closeExportModal}
+      />
 
       {/* Loading overlay during export */}
       {isExporting && (

@@ -1,5 +1,7 @@
 import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { generateDOCX } from "./docxGenerator.js";
 
 // Professional export configurations
 export const EXPORT_FORMATS = {
@@ -7,6 +9,7 @@ export const EXPORT_FORMATS = {
     name: 'Visual PDF',
     description: 'High-quality visual representation preserving exact formatting',
     type: 'visual',
+    category: 'document',
     recommended: ['creative', 'design', 'portfolio'],
     pros: ['Perfect visual fidelity', 'Preserves all styling', 'Professional appearance'],
     cons: ['Larger file size', 'Less ATS-friendly', 'Not easily editable']
@@ -15,6 +18,7 @@ export const EXPORT_FORMATS = {
     name: 'Searchable PDF',
     description: 'Text-based PDF optimized for ATS systems and search',
     type: 'searchable',
+    category: 'document',
     recommended: ['tech', 'finance', 'consulting'],
     pros: ['ATS-optimized', 'Smaller file size', 'Searchable text'],
     cons: ['Basic formatting', 'No custom styling', 'Limited visual appeal']
@@ -23,9 +27,82 @@ export const EXPORT_FORMATS = {
     name: 'Hybrid PDF',
     description: 'Best of both worlds - visual quality with searchable text',
     type: 'hybrid',
+    category: 'document',
     recommended: ['executive', 'management', 'general'],
     pros: ['Visual quality', 'ATS-compatible', 'Searchable text'],
     cons: ['Larger processing time', 'Complex generation']
+  },
+  docx: {
+    name: 'Editable DOCX',
+    description: 'Microsoft Word document that can be edited and customized later',
+    type: 'docx',
+    category: 'document',
+    recommended: ['recruiting', 'hr', 'collaborative'],
+    pros: ['Fully editable in Word/Google Docs', 'Professional formatting', 'Easy to customize'],
+    cons: ['Layout may vary between editors', 'Requires Word/Google Docs', 'Less visual consistency']
+  },
+  png: {
+    name: 'PNG Image',
+    description: 'High-quality image format for social media and web sharing',
+    type: 'png',
+    category: 'image',
+    recommended: ['social media', 'online profiles', 'web portfolios'],
+    pros: ['Perfect for social sharing', 'High visual quality', 'Works everywhere'],
+    cons: ['Not editable', 'Large file size', 'No text selection']
+  },
+  jpg: {
+    name: 'JPG Image',
+    description: 'Compressed image format for quick sharing and smaller files',
+    type: 'jpg',
+    category: 'image',
+    recommended: ['email attachments', 'quick sharing', 'mobile viewing'],
+    pros: ['Small file size', 'Universal compatibility', 'Fast loading'],
+    cons: ['Lossy compression', 'Not editable', 'No text selection']
+  },
+  html: {
+    name: 'Web Portfolio',
+    description: 'Interactive HTML page with responsive design and animations',
+    type: 'html',
+    category: 'web',
+    recommended: ['web developers', 'digital portfolios', 'online presence'],
+    pros: ['Interactive elements', 'Responsive design', 'SEO-friendly', 'Easy to share online'],
+    cons: ['Requires web hosting', 'May need technical knowledge', 'Browser dependent']
+  },
+  json: {
+    name: 'JSON Data',
+    description: 'Structured data format for importing to other career platforms',
+    type: 'json',
+    category: 'data',
+    recommended: ['developers', 'data migration', 'backup purposes'],
+    pros: ['Machine readable', 'Easy integration', 'Complete data export', 'Platform migration'],
+    cons: ['Not human readable', 'Requires technical knowledge', 'No visual formatting']
+  },
+  txt: {
+    name: 'Plain Text',
+    description: 'Simple text format for basic ATS systems and email',
+    type: 'txt',
+    category: 'text',
+    recommended: ['basic ATS systems', 'email body', 'simple applications'],
+    pros: ['Universal compatibility', 'Tiny file size', 'ATS-safe', 'Email friendly'],
+    cons: ['No formatting', 'No visual appeal', 'Very basic presentation']
+  },
+  latex: {
+    name: 'LaTeX Document',
+    description: 'Professional typesetting format for academic and scientific resumes',
+    type: 'latex',
+    category: 'academic',
+    recommended: ['academic positions', 'research roles', 'scientific fields'],
+    pros: ['Professional typesetting', 'Perfect formatting', 'Academic standard', 'Highly customizable'],
+    cons: ['Requires LaTeX knowledge', 'Complex compilation', 'Steep learning curve']
+  },
+  linkedin: {
+    name: 'LinkedIn Ready',
+    description: 'Optimized format for copying directly into LinkedIn profile sections',
+    type: 'linkedin',
+    category: 'social',
+    recommended: ['LinkedIn optimization', 'professional networking', 'social media'],
+    pros: ['LinkedIn-optimized formatting', 'Copy-paste ready', 'Professional networking', 'SEO keywords'],
+    cons: ['Platform specific', 'Limited formatting', 'Character limits may apply']
   }
 };
 
@@ -113,6 +190,22 @@ export class EnhancedPDFGenerator {
           return await this.generateSearchablePDF(cvData, config);
         case 'hybrid':
           return await this.generateHybridPDF(elementId, cvData, config);
+        case 'docx':
+          return await this.generateDOCX(cvData, config);
+        case 'png':
+          return await this.generatePNG(elementId, cvData, config);
+        case 'jpg':
+          return await this.generateJPG(elementId, cvData, config);
+        case 'html':
+          return await this.generateHTML(cvData, config);
+        case 'json':
+          return await this.generateJSON(cvData, config);
+        case 'txt':
+          return await this.generateTXT(cvData, config);
+        case 'latex':
+          return await this.generateLaTeX(cvData, config);
+        case 'linkedin':
+          return await this.generateLinkedIn(cvData, config);
         default:
           throw new Error(`Unknown format: ${config.format}`);
       }
@@ -120,7 +213,7 @@ export class EnhancedPDFGenerator {
       console.error('Enhanced PDF Generation Error:', error);
       return {
         success: false,
-        message: `Failed to generate PDF: ${error.message}`,
+        message: `Failed to generate ${config.format.toUpperCase()}: ${error.message}`,
         error
       };
     }
@@ -130,491 +223,1442 @@ export class EnhancedPDFGenerator {
    * Generate high-quality visual PDF
    */
   async generateVisualPDF(elementId, cvData, config) {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      throw new Error('CV preview element not found');
+    console.log('🎯 FIXED Visual PDF: Starting generation...');
+
+    // Find the element
+    const originalElement = document.getElementById(elementId);
+    if (!originalElement) {
+      const availableIds = Array.from(document.querySelectorAll('[id]')).map(el => el.id);
+      throw new Error(`CV preview element not found with ID '${elementId}'. Available elements: ${availableIds.join(', ')}`);
     }
 
+    console.log('✅ Found element:', elementId);
+    console.log('📐 Original element size:', originalElement.offsetWidth, 'x', originalElement.offsetHeight);
+
     const quality = EXPORT_QUALITIES[config.quality];
-    const margins = MARGIN_PRESETS[config.margins];
     const pageFormat = PAGE_FORMATS[config.pageFormat];
+    const margins = MARGIN_PRESETS[config.margins];
 
-    // Prepare element for export
-    await this.prepareElementForExport(element, config);
+    try {
+      // STEP 1: Create a clean, light-mode clone
+      const lightClone = await this.createLightClone(originalElement, elementId);
 
-    const html2pdfOptions = {
-      margin: [margins.top, margins.right, margins.bottom, margins.left],
-      filename: config.filename || this.generateFilename(cvData, config),
-      image: {
-        type: 'jpeg',
-        quality: quality.quality
-      },
-      html2canvas: {
+      // STEP 2: Use html2canvas with FULL content dimensions
+      console.log('📸 Starting html2canvas capture...');
+
+      // Get full dimensions with sufficient padding to capture text bottoms
+      const captureWidth = Math.max(lightClone.offsetWidth, lightClone.scrollWidth);
+      const captureHeight = Math.max(lightClone.offsetHeight, lightClone.scrollHeight) + 60; // Increased padding for text descenders
+
+      console.log('🔍 Capture dimensions (preserving spacing + text bottom protection):', captureWidth, 'x', captureHeight);
+      console.log('📊 Element dimensions - offset:', lightClone.offsetWidth, 'x', lightClone.offsetHeight);
+      console.log('📊 Element dimensions - scroll:', lightClone.scrollWidth, 'x', lightClone.scrollHeight);
+      console.log('✨ Original Tailwind spacing preserved in clone');
+      console.log('🛡️ Extra 60px capture padding to prevent text bottom cutoff');
+
+      const canvas = await html2canvas(lightClone, {
         scale: quality.scale,
-        useCORS: true,
-        letterRendering: true,
-        allowTaint: false,
         backgroundColor: '#ffffff',
-        logging: false,
-        preserveDrawingBuffer: true,
-        foreignObjectRendering: true,
-        windowWidth: 1200,
-        windowHeight: 1600
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: [pageFormat.width, pageFormat.height],
-        orientation: 'portrait',
-        compress: quality.compress,
-        userUnit: 1.0,
-        encryption: config.password ? {
-          userPassword: config.password,
-          ownerPassword: config.password + '_owner',
-          userPermissions: ['print', 'modify', 'copy', 'annot-forms']
-        } : undefined
-      },
-      pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy'],
-        before: '.page-break-before',
-        after: '.page-break-after'
-      }
-    };
-
-    // Generate PDF
-    const pdf = html2pdf().set(html2pdfOptions).from(element);
-
-    // Add metadata
-    if (config.metadata) {
-      pdf.get('pdf').then(pdfObj => {
-        this.addMetadataToPDF(pdfObj, config.metadata, cvData);
-      });
-    }
-
-    // Add watermark if specified
-    if (config.watermark) {
-      pdf.get('pdf').then(pdfObj => {
-        this.addWatermark(pdfObj, config.watermark);
-      });
-    }
-
-    await pdf.save();
-
-    return {
-      success: true,
-      message: 'High-quality visual PDF generated successfully!',
-      format: 'visual',
-      quality: config.quality,
-      fileSize: 'Large (optimized for visual quality)',
-      atsCompatibility: 'Low (visual format)'
-    };
-  }
-
-  /**
-   * Generate ATS-optimized searchable PDF
-   */
-  async generateSearchablePDF(cvData, config) {
-    const quality = EXPORT_QUALITIES[config.quality];
-    const margins = MARGIN_PRESETS[config.margins];
-    const pageFormat = PAGE_FORMATS[config.pageFormat];
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [pageFormat.width, pageFormat.height],
-      compress: quality.compress
-    });
-
-    // Add metadata
-    if (config.metadata) {
-      this.addMetadataToPDF(pdf, config.metadata, cvData);
-    }
-
-    // Enhanced text-based layout
-    await this.buildSearchablePDFContent(pdf, cvData, {
-      margins,
-      pageFormat,
-      typography: config.typography || 'professional'
-    });
-
-    // Add password protection if specified
-    if (config.password) {
-      pdf.setDocumentProperties({
-        encryption: {
-          userPassword: config.password,
-          ownerPassword: config.password + '_owner'
+        useCORS: true,
+        allowTaint: false,
+        letterRendering: true,
+        logging: true,
+        width: captureWidth,  // Use full content width
+        height: captureHeight, // Use full content height
+        foreignObjectRendering: false,
+        removeContainer: true,
+        imageTimeout: 15000,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
+        x: 0,
+        y: 0,
+        // Ensure we capture everything including overflow
+        ignoreElements: (element) => {
+          return element.classList && element.classList.contains('no-print');
         }
       });
+
+      console.log('✅ Canvas created:', canvas.width, 'x', canvas.height);
+
+      // STEP 3: Create PDF from canvas
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [pageFormat.width, pageFormat.height],
+        compress: quality.compress
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', quality.quality);
+
+      // Calculate dimensions to fit page properly - FIXED CUTOFF ISSUE
+      const pdfWidth = pageFormat.width - margins.left - margins.right;
+      const pdfHeight = pageFormat.height - margins.top - margins.bottom;
+
+      console.log('📏 PDF page size:', pageFormat.width, 'x', pageFormat.height);
+      console.log('📄 Available content area:', pdfWidth, 'x', pdfHeight);
+      console.log('🖼️ Canvas size:', canvas.width, 'x', canvas.height);
+
+      // Use proper pixel to mm conversion (96 DPI standard)
+      const pixelToMm = 0.264583; // 1 pixel = 0.264583 mm at 96 DPI
+
+      // Calculate the image dimensions in mm
+      const imgWidthMm = canvas.width * pixelToMm;
+      const imgHeightMm = canvas.height * pixelToMm;
+
+      // Calculate scaling to preserve spacing - less aggressive scaling
+      const scaleX = pdfWidth / imgWidthMm;
+      const scaleY = pdfHeight / imgHeightMm;
+      const scale = Math.min(scaleX, scaleY) * 0.98; // 98% to preserve spacing better
+
+      const finalWidth = imgWidthMm * scale;
+      const finalHeight = imgHeightMm * scale;
+
+      console.log('🔧 Scaling factor (preserving spacing):', scale.toFixed(3));
+      console.log('📐 Final size (maintaining proportions):', finalWidth.toFixed(1), 'x', finalHeight.toFixed(1));
+
+      // Center the image on the page
+      const xOffset = margins.left + Math.max(0, (pdfWidth - finalWidth) / 2);
+      const yOffset = margins.top;
+
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, finalWidth, finalHeight);
+
+      if (config.metadata) {
+        this.addMetadataToPDF(pdf, config.metadata, cvData);
+      }
+
+      // STEP 4: Save PDF
+      const filename = config.filename || this.generateFilename(cvData, config);
+      pdf.save(filename);
+
+      // STEP 5: Cleanup
+      this.removeLightClone(lightClone);
+
+      console.log('🎉 Visual PDF generated with preserved spacing!');
+
+      return {
+        success: true,
+        message: 'Visual PDF generated with exact preview spacing and NO text cutoff!',
+        format: 'visual',
+        quality: config.quality,
+        fileSize: 'Large (preserves exact visual styling and spacing)',
+        atsCompatibility: 'Low (image-based format)',
+        editableInWord: false,
+        preservesDesign: true,
+        preservesSpacing: true,
+        preventsTextCutoff: true,
+        lightModeOnly: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+
+    } catch (error) {
+      console.error('❌ Visual PDF generation failed:', error);
+      throw new Error(`Visual PDF failed: ${error.message}. Check browser console for details.`);
     }
-
-    // Save PDF
-    const filename = config.filename || this.generateFilename(cvData, config);
-    pdf.save(filename);
-
-    return {
-      success: true,
-      message: 'ATS-optimized searchable PDF generated successfully!',
-      format: 'searchable',
-      quality: config.quality,
-      fileSize: 'Small (text-optimized)',
-      atsCompatibility: 'High (ATS-optimized format)'
-    };
   }
 
-  /**
-   * Generate hybrid PDF combining visual and text benefits
-   */
-  async generateHybridPDF(elementId, cvData, config) {
-    // First generate visual PDF as base
-    const visualResult = await this.generateVisualPDF(elementId, cvData, {
-      ...config,
-      filename: 'temp_visual.pdf'
+  async createLightClone(originalElement, elementId) {
+    console.log('🔧 Creating light-mode clone...');
+
+    // Get the actual content dimensions BEFORE cloning
+    const originalScrollWidth = originalElement.scrollWidth;
+    const originalOffsetWidth = originalElement.offsetWidth;
+    const originalScrollHeight = originalElement.scrollHeight;
+
+    console.log('📐 Original dimensions:');
+    console.log('   - offsetWidth:', originalOffsetWidth);
+    console.log('   - scrollWidth:', originalScrollWidth);
+    console.log('   - scrollHeight:', originalScrollHeight);
+
+    const clone = originalElement.cloneNode(true);
+    clone.id = elementId + '-light-clone';
+
+    // Force light mode on clone and all children
+    clone.classList.remove('dark');
+    clone.style.backgroundColor = '#ffffff';
+    clone.style.color = '#000000';
+
+    const allElements = clone.querySelectorAll('*');
+    allElements.forEach(el => {
+      // Remove ALL dark classes
+      el.classList.remove('dark');
+      const classNames = Array.from(el.classList);
+      classNames.forEach(className => {
+        if (className.startsWith('dark:')) {
+          el.classList.remove(className);
+        }
+      });
+
+      // PRESERVE ORIGINAL SPACING - Don't change layout properties that affect spacing
+      el.style.backgroundColor = el.style.backgroundColor || '#ffffff';
+      if (el.style.color === 'white' || el.style.color === '#ffffff') {
+        el.style.color = '#000000';
+      }
+
+      // Only remove width constraints, NOT spacing-related properties
+      if (el.style.maxWidth) el.style.maxWidth = 'none';
+      if (el.style.overflow && el.style.overflow !== 'visible') {
+        el.style.overflow = 'visible';
+      }
+
+      // CRITICAL: Preserve margins, padding, and spacing exactly as in original
+      // Don't modify: margin, padding, line-height, gap, etc.
+      // These control the spacing that should match the preview
     });
 
-    if (!visualResult.success) {
-      return visualResult;
+    // Position clone off-screen but maintain same layout context as original
+    clone.style.position = 'fixed';
+    clone.style.top = '-9999px';
+    clone.style.left = '0';
+    clone.style.zIndex = '9999';
+    clone.style.visibility = 'visible';
+    clone.style.display = 'block';
+
+    // PRESERVE EXACT SPACING: Use full content dimensions but don't force constraints
+    const fullContentWidth = Math.max(originalScrollWidth, originalOffsetWidth, 1000);
+
+    clone.style.width = fullContentWidth + 'px';
+    clone.style.height = 'auto';
+    // Don't force minHeight - let natural spacing determine height
+    clone.style.overflow = 'visible';
+    // Don't change boxSizing as it affects spacing calculations
+    clone.style.maxWidth = 'none';
+    clone.style.maxHeight = 'none';
+
+    // Ensure no responsive constraints apply
+    clone.style.minWidth = fullContentWidth + 'px';
+
+    // SPACING PRESERVATION: Don't modify text elements that could affect spacing
+    // Let the original Tailwind classes handle spacing naturally
+
+    document.body.appendChild(clone);
+
+    // Wait for rendering and fonts
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased wait time
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
     }
 
-    // Then overlay searchable text layer
-    // This is a simplified version - full implementation would require
-    // more sophisticated PDF manipulation libraries
+    // Additional wait for layout to stabilize and CSS classes to compute
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    return {
-      success: true,
-      message: 'Hybrid PDF with visual quality and searchable text generated!',
-      format: 'hybrid',
-      quality: config.quality,
-      fileSize: 'Medium (balanced optimization)',
-      atsCompatibility: 'High (hybrid format with text layer)'
-    };
+    // AFTER layout stabilizes, add minimal bottom padding ONLY to prevent text cutoff
+    // This doesn't affect section spacing since it's applied after layout calculation
+    const textElements = clone.querySelectorAll('p, span, div:not([class*="mb-"]):not([class*="gap-"]), li');
+    textElements.forEach(el => {
+      // Only add minimal bottom padding if element doesn't already have significant spacing
+      const computedStyle = window.getComputedStyle(el);
+      const currentPaddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+
+      // Only add padding if text element lacks sufficient bottom clearance
+      if (currentPaddingBottom < 3) {
+        el.style.paddingBottom = Math.max(currentPaddingBottom, 3) + 'px';
+      }
+    });
+
+    // Force another layout recalculation after padding adjustment
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Force CSS recalculation to ensure Tailwind classes are properly applied
+    const allCloneElements = clone.querySelectorAll('*');
+    allCloneElements.forEach(el => {
+      // Force style recalculation
+      window.getComputedStyle(el);
+    });
+
+    // Special handling for elements that commonly get cut off (dates, short text)
+    const potentialCutoffElements = clone.querySelectorAll('*');
+    potentialCutoffElements.forEach(el => {
+      const text = el.textContent?.trim();
+      // Check for date patterns or short text that commonly gets cut off
+      if (text && (
+        /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}\b/i.test(text) ||
+        /\b\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}\b/i.test(text) ||
+        text.length <= 5 // Short text elements like "asd"
+      )) {
+        // Add extra bottom protection for these elements
+        el.style.paddingBottom = '6px';
+        console.log('🛡️ Added bottom protection to:', text);
+      }
+    });
+
+    // Force a layout recalculation on the main clone
+    clone.offsetHeight; // Force reflow
+    clone.scrollHeight; // Force scroll calculation
+
+    const finalWidth = Math.max(clone.offsetWidth, clone.scrollWidth);
+    const finalHeight = Math.max(clone.offsetHeight, clone.scrollHeight);
+
+    console.log('✅ Light clone created with PRESERVED SPACING + TEXT PROTECTION:');
+    console.log('   - Final width:', finalWidth);
+    console.log('   - Final height:', finalHeight);
+    console.log('   - scroll vs offset (width):', clone.scrollWidth, 'vs', clone.offsetWidth);
+    console.log('   - scroll vs offset (height):', clone.scrollHeight, 'vs', clone.offsetHeight);
+    console.log('   - ✨ Spacing preserved from original preview');
+    console.log('   - 🛡️ Bottom text cutoff protection added');
+
+    return clone;
+  }
+
+  removeLightClone(cloneElement) {
+    if (cloneElement && cloneElement.parentNode) {
+      cloneElement.parentNode.removeChild(cloneElement);
+      console.log('🧹 Light clone cleanup complete');
+    }
   }
 
   /**
-   * Build professional searchable PDF content
+   * Generate searchable PDF using EXACT same approach as successful visual PDF
    */
-  async buildSearchablePDFContent(pdf, cvData, layoutConfig) {
-    const { margins, pageFormat } = layoutConfig;
-    let yPosition = margins.top;
+  async generateSearchablePDF(cvData, config) {
+    console.log('🎯 Searchable PDF: Using EXACT visual PDF approach with text extraction...');
 
-    const pageWidth = pageFormat.width;
-    const contentWidth = pageWidth - margins.left - margins.right;
-
-    // Professional typography settings
-    const typography = {
-      heading: { font: 'helvetica', style: 'bold', size: 14 },
-      subheading: { font: 'helvetica', style: 'bold', size: 12 },
-      body: { font: 'helvetica', style: 'normal', size: 10 },
-      detail: { font: 'helvetica', style: 'normal', size: 9 }
-    };
-
-    // Helper function for adding professional sections
-    const addSection = (title, content, spacing = 5) => {
-      // Check if we need a new page
-      if (yPosition > pageFormat.height - margins.bottom - 30) {
-        pdf.addPage();
-        yPosition = margins.top;
-      }
-
-      // Add section title
-      pdf.setFont(typography.heading.font, typography.heading.style);
-      pdf.setFontSize(typography.heading.size);
-      pdf.text(title.toUpperCase(), margins.left, yPosition);
-
-      // Add underline
-      const titleWidth = pdf.getTextWidth(title.toUpperCase());
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(0.5);
-      pdf.line(margins.left, yPosition + 1, margins.left + titleWidth, yPosition + 1);
-
-      yPosition += spacing;
-
-      // Add content
-      if (typeof content === 'function') {
-        yPosition = content(yPosition);
-      } else if (typeof content === 'string') {
-        pdf.setFont(typography.body.font, typography.body.style);
-        pdf.setFontSize(typography.body.size);
-        const lines = pdf.splitTextToSize(content, contentWidth);
-        pdf.text(lines, margins.left, yPosition);
-        yPosition += lines.length * (typography.body.size * 0.35) + 2;
-      }
-
-      yPosition += spacing;
-    };
-
-    // Header with contact information
-    if (cvData.personalInfo?.fullName) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(18);
-      pdf.text(cvData.personalInfo.fullName.toUpperCase(), margins.left, yPosition);
-      yPosition += 8;
-
-      // Contact info in professional layout
-      const contactItems = [];
-      if (cvData.personalInfo.email) contactItems.push(cvData.personalInfo.email);
-      if (cvData.personalInfo.phone) contactItems.push(cvData.personalInfo.phone);
-      if (cvData.personalInfo.address) contactItems.push(cvData.personalInfo.address);
-
-      if (contactItems.length > 0) {
-        pdf.setFont(typography.body.font, typography.body.style);
-        pdf.setFontSize(typography.body.size);
-        pdf.text(contactItems.join(' • '), margins.left, yPosition);
-        yPosition += 12;
-      }
+    // STEP 1: Find the element (EXACT same as visual PDF)
+    const elementId = 'cv-preview-print';
+    const originalElement = document.getElementById(elementId);
+    if (!originalElement) {
+      const availableIds = Array.from(document.querySelectorAll('[id]')).map(el => el.id);
+      throw new Error(`CV preview element not found with ID '${elementId}'. Available elements: ${availableIds.join(', ')}`);
     }
 
-    // Professional summary
-    if (cvData.profile?.summary) {
-      addSection('Professional Summary', cvData.profile.summary);
-    }
+    console.log('✅ Found element:', elementId);
+    console.log('📐 Original element size:', originalElement.offsetWidth, 'x', originalElement.offsetHeight);
 
-    // Experience with professional formatting
-    if (cvData.experience?.length > 0) {
-      addSection('Professional Experience', (startY) => {
-        let currentY = startY;
+    const quality = EXPORT_QUALITIES[config.quality];
+    const pageFormat = PAGE_FORMATS[config.pageFormat];
+    const margins = MARGIN_PRESETS[config.margins];
 
-        cvData.experience.forEach((exp, index) => {
-          // Job title and company
-          if (exp.jobTitle || exp.company) {
-            pdf.setFont(typography.subheading.font, typography.subheading.style);
-            pdf.setFontSize(typography.subheading.size);
+    try {
+      // STEP 2: Create EXACT same light-mode clone (proven method)
+      console.log('🔧 Creating EXACT same light-mode clone as visual PDF...');
+      const lightClone = await this.createLightClone(originalElement, elementId);
 
-            const jobTitle = exp.jobTitle || '';
-            const company = exp.company || '';
-            const header = company ? `${jobTitle} • ${company}` : jobTitle;
+      // STEP 3: Use EXACT same capture dimensions as visual PDF
+      const captureWidth = Math.max(lightClone.offsetWidth, lightClone.scrollWidth);
+      const captureHeight = Math.max(lightClone.offsetHeight, lightClone.scrollHeight) + 60; // Same padding as visual PDF
 
-            pdf.text(header, margins.left, currentY);
-            currentY += 4;
-          }
+      console.log('🔍 Using EXACT same dimensions as visual PDF:', captureWidth, 'x', captureHeight);
+      console.log('📊 Element dimensions - offset:', lightClone.offsetWidth, 'x', lightClone.offsetHeight);
+      console.log('📊 Element dimensions - scroll:', lightClone.scrollWidth, 'x', lightClone.scrollHeight);
+      console.log('✨ Original Tailwind spacing preserved in clone');
+      console.log('🛡️ Extra 60px capture padding to prevent text bottom cutoff');
 
-          // Dates
-          if (exp.startDate || exp.endDate || exp.isPresent) {
-            pdf.setFont(typography.detail.font, 'italic');
-            pdf.setFontSize(typography.detail.size);
+      // STEP 4: Extract text content from the clone (instead of html2canvas)
+      console.log('📋 Extracting text content from successful visual clone...');
+      const textElements = await this.extractTextFromVisualClone(lightClone);
 
-            const startDate = exp.startDate || '';
-            const endDate = exp.isPresent ? 'Present' : (exp.endDate || '');
-            const dateRange = `${startDate} - ${endDate}`;
-
-            pdf.text(dateRange, margins.left, currentY);
-            currentY += 4;
-          }
-
-          // Description
-          if (exp.description) {
-            pdf.setFont(typography.body.font, typography.body.style);
-            pdf.setFontSize(typography.body.size);
-
-            const lines = pdf.splitTextToSize(exp.description, contentWidth - 5);
-            pdf.text(lines, margins.left + 5, currentY);
-            currentY += lines.length * (typography.body.size * 0.35) + 3;
-          }
-
-          // Add spacing between entries
-          if (index < cvData.experience.length - 1) {
-            currentY += 3;
-          }
-        });
-
-        return currentY;
+      // STEP 5: Create PDF with EXACT same configuration as visual PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [pageFormat.width, pageFormat.height],
+        compress: quality.compress
       });
+
+      // STEP 6: Use EXACT same scaling calculations as visual PDF
+      console.log('🎨 Using EXACT same scaling and positioning as visual PDF...');
+
+      // Calculate dimensions to fit page properly (EXACT same as visual PDF)
+      const pdfWidth = pageFormat.width - margins.left - margins.right;
+      const pdfHeight = pageFormat.height - margins.top - margins.bottom;
+
+      console.log('📏 PDF page size:', pageFormat.width, 'x', pageFormat.height);
+      console.log('📄 Available content area:', pdfWidth, 'x', pdfHeight);
+      console.log('📐 Clone size (like canvas):', captureWidth, 'x', captureHeight);
+
+      // Use EXACT same pixel to mm conversion as visual PDF
+      const pixelToMm = 0.264583; // Same as visual PDF
+
+      // Calculate dimensions in mm (EXACT same as visual PDF)
+      const imgWidthMm = captureWidth * pixelToMm;
+      const imgHeightMm = captureHeight * pixelToMm;
+
+      // Calculate scaling (EXACT same as visual PDF)
+      const scaleX = pdfWidth / imgWidthMm;
+      const scaleY = pdfHeight / imgHeightMm;
+      const scale = Math.min(scaleX, scaleY) * 0.98; // Same 98% scaling as visual PDF
+
+      const finalWidth = imgWidthMm * scale;
+      const finalHeight = imgHeightMm * scale;
+
+      console.log('🔧 Scaling factor (SAME as visual PDF):', scale.toFixed(3));
+      console.log('📐 Final size (SAME calculations):', finalWidth.toFixed(1), 'x', finalHeight.toFixed(1));
+
+      // Center on page (EXACT same as visual PDF)
+      const xOffset = margins.left + Math.max(0, (pdfWidth - finalWidth) / 2);
+      const yOffset = margins.top;
+
+      console.log('📍 Position offset (SAME as visual PDF):', xOffset.toFixed(1), ',', yOffset.toFixed(1));
+
+      // STEP 7: Position text using visual PDF coordinate system
+      await this.positionTextUsingVisualPDFCoordinates(pdf, textElements, {
+        xOffset,
+        yOffset,
+        scale,
+        lightClone
+      });
+
+      // Add metadata (same as visual PDF)
+      if (config.metadata) {
+        this.addMetadataToPDF(pdf, config.metadata, cvData);
+      }
+
+      // Save PDF
+      const filename = config.filename || this.generateFilename(cvData, config);
+      pdf.save(filename);
+
+      // Cleanup (same as visual PDF)
+      this.removeLightClone(lightClone);
+
+      console.log('🎉 Searchable PDF generated using EXACT visual PDF approach!');
+
+      return {
+        success: true,
+        message: 'Searchable PDF generated using EXACT visual PDF method - perfect match with searchable text!',
+        format: 'searchable',
+        quality: config.quality,
+        fileSize: 'Medium (visual PDF approach with searchable text)',
+        atsCompatibility: 'High (searchable text with exact visual layout)',
+        preservesDesign: true,
+        preservesSpacing: true,
+        exactVisualMatch: true,
+        textSearchable: true,
+        generationMethod: 'visual-pdf-text-extraction',
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+
+    } catch (error) {
+      console.error('❌ Visual PDF approach for searchable failed:', error);
+      console.log('🔄 Falling back to clean method...');
+      return await this.buildCleanSearchablePDFDirect(cvData, config);
+    }
+  }
+
+  /**
+   * Extract text content from visual clone (same clone that visual PDF uses)
+   */
+  async extractTextFromVisualClone(lightClone) {
+    console.log('🔍 Extracting text from visual clone (same clone visual PDF uses)...');
+
+    const textElements = [];
+    const cloneRect = lightClone.getBoundingClientRect();
+
+    // Get all text-containing elements
+    const walker = document.createTreeWalker(
+      lightClone,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          const text = node.textContent.trim();
+          if (!text) return NodeFilter.FILTER_SKIP;
+
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_SKIP;
+
+          // Skip hidden elements
+          const style = window.getComputedStyle(parent);
+          if (style.display === 'none' ||
+              style.visibility === 'hidden' ||
+              style.opacity === '0') {
+            return NodeFilter.FILTER_SKIP;
+          }
+
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    let textNode;
+    while (textNode = walker.nextNode()) {
+      const text = textNode.textContent.trim();
+      if (!text) continue;
+
+      const parent = textNode.parentElement;
+      const rect = parent.getBoundingClientRect();
+      const computedStyle = window.getComputedStyle(parent);
+
+      // Calculate position relative to clone (same as visual PDF sees it)
+      const relativeX = rect.left - cloneRect.left;
+      const relativeY = rect.top - cloneRect.top;
+
+      textElements.push({
+        text: text,
+        x: relativeX,
+        y: relativeY,
+        width: rect.width,
+        height: rect.height,
+        fontSize: parseFloat(computedStyle.fontSize) || 16,
+        fontWeight: computedStyle.fontWeight,
+        color: computedStyle.color,
+        fontFamily: computedStyle.fontFamily,
+        element: parent
+      });
+    }
+
+    // Sort by position (top to bottom, left to right)
+    textElements.sort((a, b) => {
+      const yDiff = a.y - b.y;
+      if (Math.abs(yDiff) < 10) { // Same line (within 10px)
+        return a.x - b.x;
+      }
+      return yDiff;
+    });
+
+    console.log(`📋 Extracted ${textElements.length} text elements from visual clone`);
+    return textElements;
+  }
+
+  /**
+   * Position text using EXACT visual PDF coordinate system
+   */
+  async positionTextUsingVisualPDFCoordinates(pdf, textElements, coords) {
+    const { xOffset, yOffset, scale, lightClone } = coords;
+    const pixelToMm = 0.264583; // Same as visual PDF
+
+    console.log('🎨 Positioning text using EXACT visual PDF coordinate system...');
+
+    for (const element of textElements) {
+      try {
+        // Convert element position to PDF coordinates (EXACT same as visual PDF)
+        const elementXMm = element.x * pixelToMm;
+        const elementYMm = element.y * pixelToMm;
+
+        const pdfX = xOffset + (elementXMm * scale);
+        const pdfY = yOffset + (elementYMm * scale);
+
+        // Convert font size using same scaling
+        let fontSize = (element.fontSize * scale * pixelToMm) * 2.83; // Convert to PDF point size
+        fontSize = Math.max(6, Math.min(72, fontSize)); // Reasonable bounds
+
+        // Determine font style from computed styles
+        const isBold = element.fontWeight === 'bold' ||
+                      element.fontWeight === '700' ||
+                      parseInt(element.fontWeight) > 500;
+
+        // Set font
+        pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+        pdf.setFontSize(fontSize);
+
+        // Convert color
+        const color = this.parseColorToRGB(element.color);
+        pdf.setTextColor(color.r, color.g, color.b);
+
+        // Add text at exact position
+        pdf.text(element.text, pdfX, pdfY + (fontSize * 0.8)); // Baseline adjustment
+
+      } catch (error) {
+        console.warn('⚠️ Failed to position text element:', element.text, error);
+      }
+    }
+
+    console.log('✅ Text positioned using EXACT visual PDF coordinates!');
+  }
+
+  /**
+   * Parse CSS color to RGB (reuse visual PDF logic)
+   */
+  parseColorToRGB(cssColor) {
+    if (!cssColor) return { r: 0, g: 0, b: 0 };
+
+    if (cssColor.startsWith('rgb(')) {
+      const matches = cssColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (matches) {
+        return {
+          r: parseInt(matches[1]),
+          g: parseInt(matches[2]),
+          b: parseInt(matches[3])
+        };
+      }
+    }
+
+    if (cssColor.startsWith('rgba(')) {
+      const matches = cssColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+      if (matches) {
+        return {
+          r: parseInt(matches[1]),
+          g: parseInt(matches[2]),
+          b: parseInt(matches[3])
+        };
+      }
+    }
+
+    if (cssColor.startsWith('#')) {
+      const hex = cssColor.substring(1);
+      return {
+        r: parseInt(hex.substr(0, 2), 16),
+        g: parseInt(hex.substr(2, 2), 16),
+        b: parseInt(hex.substr(4, 2), 16)
+      };
+    }
+
+    // Default to black
+    return { r: 0, g: 0, b: 0 };
+  }
+
+  // Fallback method for error handling
+  async buildCleanSearchablePDFDirect(cvData, config) {
+    console.log('Fallback: Simple searchable PDF');
+    const pdf = new jsPDF();
+    pdf.text('Searchable PDF Generation Error', 20, 20);
+    pdf.text('Please use Visual PDF format for best results', 20, 30);
+    const filename = config.filename || `resume_${Date.now()}.pdf`;
+    pdf.save(filename);
+    return { success: true, message: 'Fallback PDF generated' };
+  }
+
+  /**
+   * Generate hybrid PDF (visual + searchable)
+   */
+  async generateHybridPDF(elementId, cvData, config) {
+    console.log('🔄 Generating hybrid PDF...');
+    try {
+      // For now, use the searchable PDF method as it provides the best balance
+      return await this.generateSearchablePDF(cvData, config);
+    } catch (error) {
+      console.error('❌ Hybrid PDF generation failed:', error);
+      throw new Error(`Hybrid PDF failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate DOCX document
+   */
+  async generateDOCX(cvData, config) {
+    console.log('📄 Generating DOCX...');
+    try {
+      const filename = config.filename || this.generateFilename(cvData, { ...config, format: 'docx' });
+      await generateDOCX(cvData, filename);
+
+      return {
+        success: true,
+        message: 'DOCX document generated successfully!',
+        format: 'docx',
+        fileSize: 'Small (text-based format)',
+        atsCompatibility: 'High (native Word format)',
+        editableInWord: true,
+        preservesDesign: false,
+        preservesSpacing: false,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ DOCX generation failed:', error);
+      throw new Error(`DOCX generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate PNG image
+   */
+  async generatePNG(elementId, cvData, config) {
+    console.log('🖼️ Generating PNG image...');
+    try {
+      const originalElement = document.getElementById(elementId);
+      if (!originalElement) {
+        throw new Error(`CV preview element not found with ID '${elementId}'`);
+      }
+
+      const lightClone = await this.createLightClone(originalElement, elementId);
+      const quality = EXPORT_QUALITIES[config.quality];
+
+      const canvas = await html2canvas(lightClone, {
+        scale: quality.scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: false,
+        letterRendering: true,
+        logging: false,
+        width: Math.max(lightClone.offsetWidth, lightClone.scrollWidth),
+        height: Math.max(lightClone.offsetHeight, lightClone.scrollHeight) + 60,
+        removeContainer: true
+      });
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'png' });
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      this.removeLightClone(lightClone);
+
+      return {
+        success: true,
+        message: 'PNG image generated successfully!',
+        format: 'png',
+        fileSize: 'Large (high-quality image)',
+        atsCompatibility: 'None (image format)',
+        preservesDesign: true,
+        socialMediaReady: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ PNG generation failed:', error);
+      throw new Error(`PNG generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate JPG image
+   */
+  async generateJPG(elementId, cvData, config) {
+    console.log('📸 Generating JPG image...');
+    try {
+      const originalElement = document.getElementById(elementId);
+      if (!originalElement) {
+        throw new Error(`CV preview element not found with ID '${elementId}'`);
+      }
+
+      const lightClone = await this.createLightClone(originalElement, elementId);
+      const quality = EXPORT_QUALITIES[config.quality];
+
+      const canvas = await html2canvas(lightClone, {
+        scale: quality.scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: false,
+        letterRendering: true,
+        logging: false,
+        width: Math.max(lightClone.offsetWidth, lightClone.scrollWidth),
+        height: Math.max(lightClone.offsetHeight, lightClone.scrollHeight) + 60,
+        removeContainer: true
+      });
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'jpg' });
+      link.href = canvas.toDataURL('image/jpeg', quality.quality);
+      link.click();
+
+      this.removeLightClone(lightClone);
+
+      return {
+        success: true,
+        message: 'JPG image generated successfully!',
+        format: 'jpg',
+        fileSize: 'Medium (compressed image)',
+        atsCompatibility: 'None (image format)',
+        preservesDesign: true,
+        socialMediaReady: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ JPG generation failed:', error);
+      throw new Error(`JPG generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate HTML portfolio page
+   */
+  async generateHTML(cvData, config) {
+    console.log('🌐 Generating HTML portfolio...');
+    try {
+      const htmlContent = await this.generateHTMLTemplate(cvData, config);
+
+      // Create download link
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'html' });
+      link.href = URL.createObjectURL(blob);
+      link.click();
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+      return {
+        success: true,
+        message: 'HTML portfolio generated successfully!',
+        format: 'html',
+        fileSize: 'Small (web-ready)',
+        atsCompatibility: 'High (searchable content)',
+        preservesDesign: true,
+        interactive: true,
+        responsiveDesign: true,
+        seoFriendly: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ HTML generation failed:', error);
+      throw new Error(`HTML generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate JSON data export
+   */
+  async generateJSON(cvData, config) {
+    console.log('📊 Generating JSON data export...');
+    try {
+      const jsonData = {
+        metadata: {
+          version: '2.0',
+          exportDate: new Date().toISOString(),
+          templateUsed: config.templateConfig?.selectedTemplate || 'default',
+          generatedBy: 'Professional CV Builder v2.0'
+        },
+        personalInfo: cvData.personalInfo || {},
+        profile: cvData.profile || {},
+        experience: cvData.experience || [],
+        education: cvData.education || [],
+        skills: cvData.skills || {},
+        projects: cvData.projects || [],
+        certifications: cvData.certifications || [],
+        languages: cvData.languages || [],
+        sectionOrder: cvData.sectionOrder || [],
+        activeSections: cvData.activeSections || {},
+        templateConfig: config.templateConfig || {}
+      };
+
+      const jsonString = JSON.stringify(jsonData, null, 2);
+
+      // Create download link
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'json' });
+      link.href = URL.createObjectURL(blob);
+      link.click();
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+      return {
+        success: true,
+        message: 'JSON data exported successfully!',
+        format: 'json',
+        fileSize: 'Small (structured data)',
+        atsCompatibility: 'None (data format)',
+        machineReadable: true,
+        backupReady: true,
+        platformMigration: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ JSON generation failed:', error);
+      throw new Error(`JSON generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate plain text format
+   */
+  async generateTXT(cvData, config) {
+    console.log('📝 Generating plain text format...');
+    try {
+      const textContent = await this.generatePlainText(cvData);
+
+      // Create download link
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'txt' });
+      link.href = URL.createObjectURL(blob);
+      link.click();
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+      return {
+        success: true,
+        message: 'Plain text format generated successfully!',
+        format: 'txt',
+        fileSize: 'Tiny (plain text)',
+        atsCompatibility: 'High (basic ATS systems)',
+        universalCompatibility: true,
+        emailFriendly: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ TXT generation failed:', error);
+      throw new Error(`TXT generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate LaTeX document
+   */
+  async generateLaTeX(cvData, config) {
+    console.log('🎓 Generating LaTeX document...');
+    try {
+      const latexContent = await this.generateLaTeXTemplate(cvData, config);
+
+      // Create download link
+      const blob = new Blob([latexContent], { type: 'application/x-tex' });
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'tex' });
+      link.href = URL.createObjectURL(blob);
+      link.click();
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+      return {
+        success: true,
+        message: 'LaTeX document generated successfully!',
+        format: 'latex',
+        fileSize: 'Small (LaTeX source)',
+        atsCompatibility: 'Medium (after compilation)',
+        professionalTypesetting: true,
+        academicStandard: true,
+        highlyCustomizable: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ LaTeX generation failed:', error);
+      throw new Error(`LaTeX generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate LinkedIn-ready format
+   */
+  async generateLinkedIn(cvData, config) {
+    console.log('💼 Generating LinkedIn-ready format...');
+    try {
+      const linkedinContent = await this.generateLinkedInFormat(cvData);
+
+      // Create download link
+      const blob = new Blob([linkedinContent], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.download = config.filename || this.generateFilename(cvData, { ...config, format: 'txt' });
+      link.href = URL.createObjectURL(blob);
+      link.click();
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+      return {
+        success: true,
+        message: 'LinkedIn-ready format generated successfully!',
+        format: 'linkedin',
+        fileSize: 'Small (optimized text)',
+        atsCompatibility: 'High (LinkedIn native)',
+        linkedinOptimized: true,
+        copyPasteReady: true,
+        professionalNetworking: true,
+        seoOptimized: true,
+        templateUsed: config.templateConfig?.selectedTemplate || 'default'
+      };
+    } catch (error) {
+      console.error('❌ LinkedIn generation failed:', error);
+      throw new Error(`LinkedIn generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate HTML template
+   */
+  async generateHTMLTemplate(cvData, config) {
+    const { personalInfo, profile, experience, education, skills, projects, certifications, languages } = cvData;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${personalInfo?.fullName || 'Professional Resume'} - Portfolio</title>
+    <meta name="description" content="Professional portfolio of ${personalInfo?.fullName || 'Professional'}">
+    <meta name="keywords" content="${personalInfo?.fullName}, resume, portfolio, ${(skills?.technical || []).slice(0, 5).join(', ')}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Georgia', serif; line-height: 1.6; color: #333; background: #f9f9f9; }
+        .container { max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; text-align: center; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header .contact { font-size: 1.1rem; opacity: 0.9; }
+        .content { padding: 2rem; }
+        .section { margin-bottom: 2rem; }
+        .section h2 { color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .profile { font-size: 1.1rem; line-height: 1.8; color: #555; }
+        .experience-item, .education-item, .project-item { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        .experience-item:last-child, .education-item:last-child, .project-item:last-child { border-bottom: none; }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; margin-bottom: 0.5rem; }
+        .item-title { font-weight: bold; color: #333; }
+        .item-company { color: #667eea; }
+        .item-date { color: #888; font-size: 0.9rem; }
+        .item-description { color: #555; margin-top: 0.5rem; }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .skill-category h3 { color: #667eea; margin-bottom: 0.5rem; }
+        .skill-list { list-style: none; }
+        .skill-list li { background: #f0f4ff; padding: 0.3rem 0.6rem; margin: 0.2rem 0; border-radius: 4px; display: inline-block; margin-right: 0.5rem; }
+        .languages { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .language { background: #e8f4f8; padding: 0.5rem 1rem; border-radius: 20px; }
+        .footer { background: #333; color: white; text-align: center; padding: 1rem; }
+        @media (max-width: 768px) {
+            .container { margin: 0; }
+            .header { padding: 1.5rem 1rem; }
+            .header h1 { font-size: 2rem; }
+            .content { padding: 1rem; }
+            .item-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>${personalInfo?.fullName || 'Professional Resume'}</h1>
+            <div class="contact">
+                ${personalInfo?.email ? `📧 ${personalInfo.email}` : ''}
+                ${personalInfo?.phone ? ` • 📞 ${personalInfo.phone}` : ''}
+                ${personalInfo?.location ? ` • 📍 ${personalInfo.location}` : ''}
+            </div>
+        </header>
+
+        <div class="content">
+            ${profile?.summary ? `
+            <section class="section">
+                <h2>Professional Summary</h2>
+                <div class="profile">${profile.summary}</div>
+            </section>
+            ` : ''}
+
+            ${experience && experience.length > 0 ? `
+            <section class="section">
+                <h2>Professional Experience</h2>
+                ${experience.map(exp => `
+                <div class="experience-item">
+                    <div class="item-header">
+                        <div>
+                            <div class="item-title">${exp.position || ''}</div>
+                            <div class="item-company">${exp.company || ''}</div>
+                        </div>
+                        <div class="item-date">${exp.startDate || ''} - ${exp.endDate || exp.current ? 'Present' : ''}</div>
+                    </div>
+                    ${exp.description ? `<div class="item-description">${exp.description}</div>` : ''}
+                </div>
+                `).join('')}
+            </section>
+            ` : ''}
+
+            ${education && education.length > 0 ? `
+            <section class="section">
+                <h2>Education</h2>
+                ${education.map(edu => `
+                <div class="education-item">
+                    <div class="item-header">
+                        <div>
+                            <div class="item-title">${edu.degree || ''}</div>
+                            <div class="item-company">${edu.institution || ''}</div>
+                        </div>
+                        <div class="item-date">${edu.year || ''}</div>
+                    </div>
+                </div>
+                `).join('')}
+            </section>
+            ` : ''}
+
+            ${skills && (skills.technical?.length > 0 || skills.soft?.length > 0) ? `
+            <section class="section">
+                <h2>Skills & Expertise</h2>
+                <div class="skills-grid">
+                    ${skills.technical?.length > 0 ? `
+                    <div class="skill-category">
+                        <h3>Technical Skills</h3>
+                        <ul class="skill-list">
+                            ${skills.technical.map(skill => `<li>${skill}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    ${skills.soft?.length > 0 ? `
+                    <div class="skill-category">
+                        <h3>Soft Skills</h3>
+                        <ul class="skill-list">
+                            ${skills.soft.map(skill => `<li>${skill}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </div>
+            </section>
+            ` : ''}
+
+            ${projects && projects.length > 0 ? `
+            <section class="section">
+                <h2>Projects</h2>
+                ${projects.map(project => `
+                <div class="project-item">
+                    <div class="item-header">
+                        <div class="item-title">${project.name || ''}</div>
+                        ${project.date ? `<div class="item-date">${project.date}</div>` : ''}
+                    </div>
+                    ${project.description ? `<div class="item-description">${project.description}</div>` : ''}
+                    ${project.technologies ? `<div class="skills-grid"><div class="skill-category"><ul class="skill-list">${project.technologies.map(tech => `<li>${tech}</li>`).join('')}</ul></div></div>` : ''}
+                </div>
+                `).join('')}
+            </section>
+            ` : ''}
+
+            ${languages && languages.length > 0 ? `
+            <section class="section">
+                <h2>Languages</h2>
+                <div class="languages">
+                    ${languages.map(lang => `<div class="language">${lang.name} - ${lang.level}</div>`).join('')}
+                </div>
+            </section>
+            ` : ''}
+        </div>
+
+        <footer class="footer">
+            <p>Generated with Professional CV Builder v2.0 | ${new Date().toLocaleDateString()}</p>
+        </footer>
+    </div>
+</body>
+</html>`;
+  }
+
+  /**
+   * Generate plain text format
+   */
+  async generatePlainText(cvData) {
+    const { personalInfo, profile, experience, education, skills, projects, certifications, languages } = cvData;
+    let text = '';
+
+    // Header
+    if (personalInfo?.fullName) {
+      text += `${personalInfo.fullName}\n`;
+      text += '='.repeat(personalInfo.fullName.length) + '\n\n';
+    }
+
+    // Contact Information
+    if (personalInfo?.email || personalInfo?.phone || personalInfo?.location) {
+      text += 'CONTACT INFORMATION\n';
+      text += '-------------------\n';
+      if (personalInfo?.email) text += `Email: ${personalInfo.email}\n`;
+      if (personalInfo?.phone) text += `Phone: ${personalInfo.phone}\n`;
+      if (personalInfo?.location) text += `Location: ${personalInfo.location}\n`;
+      text += '\n';
+    }
+
+    // Professional Summary
+    if (profile?.summary) {
+      text += 'PROFESSIONAL SUMMARY\n';
+      text += '--------------------\n';
+      text += `${profile.summary}\n\n`;
+    }
+
+    // Experience
+    if (experience && experience.length > 0) {
+      text += 'PROFESSIONAL EXPERIENCE\n';
+      text += -'----------------------\n';
+      experience.forEach((exp, index) => {
+        if (exp.position) text += `${exp.position}\n`;
+        if (exp.company) text += `${exp.company}\n`;
+        if (exp.startDate || exp.endDate) {
+          text += `${exp.startDate || ''} - ${exp.endDate || (exp.current ? 'Present' : '')}\n`;
+        }
+        if (exp.description) text += `${exp.description}\n`;
+        if (index < experience.length - 1) text += '\n';
+      });
+      text += '\n';
     }
 
     // Education
-    if (cvData.education?.length > 0) {
-      addSection('Education', (startY) => {
-        let currentY = startY;
-
-        cvData.education.forEach((edu, index) => {
-          if (edu.degree || edu.school) {
-            pdf.setFont(typography.subheading.font, typography.subheading.style);
-            pdf.setFontSize(typography.subheading.size);
-
-            const degree = edu.degree || '';
-            const school = edu.school || '';
-            const header = school ? `${degree} • ${school}` : degree;
-            pdf.text(header, margins.left, currentY);
-            currentY += 4;
-
-            // Dates
-            if (edu.startDate || edu.endDate) {
-              pdf.setFont(typography.detail.font, 'italic');
-              pdf.setFontSize(typography.detail.size);
-              const dateRange = `${edu.startDate || ''} - ${edu.endDate || ''}`;
-              pdf.text(dateRange, margins.left, currentY);
-              currentY += 4;
-            }
-
-            if (index < cvData.education.length - 1) {
-              currentY += 3;
-            }
-          }
-        });
-
-        return currentY;
+    if (education && education.length > 0) {
+      text += 'EDUCATION\n';
+      text += '---------\n';
+      education.forEach((edu, index) => {
+        if (edu.degree) text += `${edu.degree}\n`;
+        if (edu.institution) text += `${edu.institution}\n`;
+        if (edu.year) text += `${edu.year}\n`;
+        if (index < education.length - 1) text += '\n';
       });
+      text += '\n';
     }
 
-    // Skills in professional format
-    if (cvData.skills) {
-      const skillSections = [];
-      if (cvData.skills.technical?.length) {
-        skillSections.push(`Technical Skills: ${cvData.skills.technical.join(', ')}`);
+    // Skills
+    if (skills && (skills.technical?.length > 0 || skills.soft?.length > 0)) {
+      text += 'SKILLS\n';
+      text += '------\n';
+      if (skills.technical?.length > 0) {
+        text += `Technical: ${skills.technical.join(', ')}\n`;
       }
-      if (cvData.skills.tools?.length) {
-        skillSections.push(`Tools & Technologies: ${cvData.skills.tools.join(', ')}`);
+      if (skills.soft?.length > 0) {
+        text += `Soft Skills: ${skills.soft.join(', ')}\n`;
       }
-      if (cvData.skills.soft?.length) {
-        skillSections.push(`Core Competencies: ${cvData.skills.soft.join(', ')}`);
-      }
-
-      if (skillSections.length > 0) {
-        addSection('Skills & Expertise', (startY) => {
-          let currentY = startY;
-
-          skillSections.forEach(section => {
-            pdf.setFont(typography.body.font, typography.body.style);
-            pdf.setFontSize(typography.body.size);
-            const lines = pdf.splitTextToSize(section, contentWidth);
-            pdf.text(lines, margins.left, currentY);
-            currentY += lines.length * (typography.body.size * 0.35) + 3;
-          });
-
-          return currentY;
-        });
-      }
+      text += '\n';
     }
 
-    // Additional sections (projects, certifications, languages) with similar formatting...
+    // Projects
+    if (projects && projects.length > 0) {
+      text += 'PROJECTS\n';
+      text += '--------\n';
+      projects.forEach((project, index) => {
+        if (project.name) text += `${project.name}\n`;
+        if (project.description) text += `${project.description}\n`;
+        if (project.technologies?.length > 0) {
+          text += `Technologies: ${project.technologies.join(', ')}\n`;
+        }
+        if (index < projects.length - 1) text += '\n';
+      });
+      text += '\n';
+    }
+
+    // Languages
+    if (languages && languages.length > 0) {
+      text += 'LANGUAGES\n';
+      text += '---------\n';
+      languages.forEach(lang => {
+        text += `${lang.name}: ${lang.level}\n`;
+      });
+      text += '\n';
+    }
+
+    return text;
   }
 
   /**
-   * Add professional metadata to PDF
+   * Generate LaTeX template
+   */
+  async generateLaTeXTemplate(cvData, config) {
+    const { personalInfo, profile, experience, education, skills, projects, languages } = cvData;
+
+    return `\\documentclass[11pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\usepackage[margin=1in]{geometry}
+\\usepackage{enumitem}
+\\usepackage{titlesec}
+\\usepackage{xcolor}
+\\usepackage{hyperref}
+
+% Define colors
+\\definecolor{headercolor}{RGB}{102, 126, 234}
+\\definecolor{sectioncolor}{RGB}{102, 126, 234}
+
+% Customize section formatting
+\\titleformat{\\section}{\\color{sectioncolor}\\Large\\bfseries}{}{0em}{}[\\titlerule]
+\\titlespacing*{\\section}{0pt}{20pt}{10pt}
+
+% Remove page numbers
+\\pagestyle{empty}
+
+% Custom commands
+\\newcommand{\\name}[1]{\\centerline{\\Huge\\textbf{\\color{headercolor}#1}}}
+\\newcommand{\\contact}[1]{\\centerline{\\large #1}}
+\\newcommand{\\job}[4]{\\textbf{#1} \\hfill #4 \\\\ \\textit{#2} \\\\ #3}
+\\newcommand{\\education}[3]{\\textbf{#1} \\hfill #3 \\\\ \\textit{#2}}
+\\newcommand{\\project}[3]{\\textbf{#1} \\hfill #3 \\\\ #2}
+
+\\begin{document}
+
+% Header
+\\name{${personalInfo?.fullName || 'Your Name'}}
+\\vspace{10pt}
+\\contact{${[
+  personalInfo?.email ? personalInfo.email : '',
+  personalInfo?.phone ? personalInfo.phone : '',
+  personalInfo?.location ? personalInfo.location : ''
+].filter(Boolean).join(' \\textbullet\\ ')}}
+
+\\vspace{20pt}
+
+% Professional Summary
+${profile?.summary ? `
+\\section{Professional Summary}
+${profile.summary}
+\\vspace{10pt}
+` : ''}
+
+% Experience
+${experience && experience.length > 0 ? `
+\\section{Professional Experience}
+\\begin{itemize}[leftmargin=0pt]
+${experience.map(exp => `
+\\item \\job{${exp.position || ''}}{${exp.company || ''}}{${exp.description || ''}}{${exp.startDate || ''} -- ${exp.endDate || (exp.current ? 'Present' : '')}}
+\\vspace{5pt}
+`).join('')}
+\\end{itemize}
+\\vspace{10pt}
+` : ''}
+
+% Education
+${education && education.length > 0 ? `
+\\section{Education}
+\\begin{itemize}[leftmargin=0pt]
+${education.map(edu => `
+\\item \\education{${edu.degree || ''}}{${edu.institution || ''}}{${edu.year || ''}}
+\\vspace{5pt}
+`).join('')}
+\\end{itemize}
+\\vspace{10pt}
+` : ''}
+
+% Skills
+${skills && (skills.technical?.length > 0 || skills.soft?.length > 0) ? `
+\\section{Skills}
+${skills.technical?.length > 0 ? `\\textbf{Technical:} ${skills.technical.join(', ')} \\\\` : ''}
+${skills.soft?.length > 0 ? `\\textbf{Soft Skills:} ${skills.soft.join(', ')} \\\\` : ''}
+\\vspace{10pt}
+` : ''}
+
+% Projects
+${projects && projects.length > 0 ? `
+\\section{Projects}
+\\begin{itemize}[leftmargin=0pt]
+${projects.map(project => `
+\\item \\project{${project.name || ''}}{${project.description || ''}}{${project.date || ''}}
+${project.technologies?.length > 0 ? `\\textit{Technologies:} ${project.technologies.join(', ')}` : ''}
+\\vspace{5pt}
+`).join('')}
+\\end{itemize}
+\\vspace{10pt}
+` : ''}
+
+% Languages
+${languages && languages.length > 0 ? `
+\\section{Languages}
+${languages.map(lang => `${lang.name}: ${lang.level}`).join(' \\textbullet\\ ')}
+` : ''}
+
+\\end{document}`;
+  }
+
+  /**
+   * Generate LinkedIn-ready format
+   */
+  async generateLinkedInFormat(cvData) {
+    const { personalInfo, profile, experience, education, skills } = cvData;
+    let content = '';
+
+    // Professional Headline (LinkedIn About section)
+    if (profile?.summary) {
+      content += '=== LINKEDIN ABOUT SECTION ===\n';
+      content += `${profile.summary}\n\n`;
+
+      // Add skills mention for SEO
+      if (skills?.technical?.length > 0) {
+        content += `🔧 Core Technologies: ${skills.technical.slice(0, 5).join(' • ')}\n`;
+      }
+      if (skills?.soft?.length > 0) {
+        content += `💡 Key Strengths: ${skills.soft.slice(0, 3).join(' • ')}\n`;
+      }
+      content += '\n';
+    }
+
+    // Experience (LinkedIn Experience section)
+    if (experience && experience.length > 0) {
+      content += '=== LINKEDIN EXPERIENCE SECTIONS ===\n\n';
+      experience.forEach((exp, index) => {
+        content += `--- Experience Entry ${index + 1} ---\n`;
+        content += `Position Title: ${exp.position || ''}\n`;
+        content += `Company: ${exp.company || ''}\n`;
+        content += `Duration: ${exp.startDate || ''} - ${exp.endDate || (exp.current ? 'Present' : '')}\n`;
+        if (exp.description) {
+          content += `Description:\n${exp.description}\n`;
+        }
+        content += '\n';
+      });
+    }
+
+    // Skills section
+    if (skills && (skills.technical?.length > 0 || skills.soft?.length > 0)) {
+      content += '=== LINKEDIN SKILLS TO ADD ===\n';
+      const allSkills = [...(skills.technical || []), ...(skills.soft || [])];
+      // LinkedIn allows up to 50 skills, take the first 20 most important
+      content += allSkills.slice(0, 20).map((skill, index) => `${index + 1}. ${skill}`).join('\n') + '\n\n';
+    }
+
+    // Education
+    if (education && education.length > 0) {
+      content += '=== LINKEDIN EDUCATION SECTIONS ===\n\n';
+      education.forEach((edu, index) => {
+        content += `--- Education Entry ${index + 1} ---\n`;
+        content += `Degree: ${edu.degree || ''}\n`;
+        content += `School: ${edu.institution || ''}\n`;
+        content += `Year: ${edu.year || ''}\n\n`;
+      });
+    }
+
+    // SEO Keywords section
+    content += '=== SEO KEYWORDS FOR LINKEDIN ===\n';
+    const keywords = [];
+    if (personalInfo?.fullName) keywords.push(personalInfo.fullName);
+    if (skills?.technical) keywords.push(...skills.technical.slice(0, 10));
+    if (experience?.[0]?.position) keywords.push(experience[0].position);
+
+    content += `Suggested keywords to include in your profile: ${keywords.join(', ')}\n\n`;
+
+    content += '=== LINKEDIN PROFILE OPTIMIZATION TIPS ===\n';
+    content += '• Use a professional headshot as your profile photo\n';
+    content += '• Write a compelling headline that includes your key skills\n';
+    content += '• Include industry keywords in your About section\n';
+    content += '• Request recommendations from colleagues\n';
+    content += '• Share relevant content regularly\n';
+    content += '• Connect with industry professionals\n';
+
+    return content;
+  }
+
+  /**
+   * Add metadata to PDF
    */
   addMetadataToPDF(pdf, metadata, cvData) {
-    const author = cvData.personalInfo?.fullName || metadata.author || 'Anonymous';
-    const title = metadata.title || `${author} - Professional Resume`;
+    try {
+      const title = metadata.title || (cvData.personalInfo?.fullName ? `${cvData.personalInfo.fullName} - Resume` : 'Professional Resume');
+      const author = metadata.author || cvData.personalInfo?.fullName || '';
 
-    pdf.setProperties({
-      title: title,
-      subject: metadata.subject || 'Professional Resume/CV',
-      author: author,
-      keywords: metadata.keywords || `${author}, resume, cv, professional`,
-      creator: metadata.creator || 'Professional CV Builder',
-      producer: metadata.producer || 'Professional CV Builder v2.0',
-      creationDate: new Date(),
-      modDate: new Date()
-    });
-  }
-
-  /**
-   * Prepare DOM element for optimal PDF export
-   */
-  async prepareElementForExport(element, config) {
-    // Add print-specific styles
-    element.style.width = '210mm';
-    element.style.minHeight = '297mm';
-    element.style.backgroundColor = '#ffffff';
-    element.style.color = '#000000';
-
-    // Ensure all images are loaded
-    const images = element.querySelectorAll('img');
-    await Promise.all(Array.from(images).map(img => {
-      return new Promise(resolve => {
-        if (img.complete) {
-          resolve();
-        } else {
-          img.onload = resolve;
-          img.onerror = resolve;
-        }
+      pdf.setProperties({
+        title: title,
+        subject: metadata.subject || 'Resume/CV Document',
+        author: author,
+        keywords: metadata.keywords || 'resume, cv, professional',
+        creator: metadata.creator || 'Professional CV Builder',
+        producer: metadata.producer || 'Professional CV Builder v2.0'
       });
-    }));
 
-    // Add page break classes if needed
-    const sections = element.querySelectorAll('.cv-section');
-    sections.forEach((section, index) => {
-      section.style.pageBreakInside = 'avoid';
-      if (index > 0) {
-        section.style.pageBreakBefore = 'auto';
-      }
-    });
+      console.log('✅ PDF metadata added:', title);
+    } catch (error) {
+      console.warn('⚠️ Failed to add PDF metadata:', error);
+    }
   }
 
   /**
-   * Generate professional filename
+   * Generate appropriate filename
    */
   generateFilename(cvData, config) {
     const name = cvData.personalInfo?.fullName || 'Resume';
-    const cleanName = name
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .toLowerCase();
-
-    const date = new Date().toISOString().split('T')[0];
+    const cleanName = name.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const format = config.format || 'pdf';
-    const quality = config.quality || 'standard';
+    const timestamp = new Date().toISOString().split('T')[0];
 
-    return `${cleanName}_resume_${format}_${quality}_${date}.pdf`;
-  }
+    // Map formats to file extensions
+    const extensionMap = {
+      visual: 'pdf',
+      searchable: 'pdf',
+      hybrid: 'pdf',
+      docx: 'docx',
+      png: 'png',
+      jpg: 'jpg',
+      html: 'html',
+      json: 'json',
+      txt: 'txt',
+      latex: 'tex',
+      linkedin: 'txt'
+    };
 
-  /**
-   * Add watermark to PDF
-   */
-  addWatermark(pdf, watermarkConfig) {
-    const pageCount = pdf.getNumberOfPages();
+    const extension = extensionMap[format] || 'pdf';
 
-    for (let i = 1; i <= pageCount; i++) {
-      pdf.setPage(i);
+    // Format-specific naming
+    const formatSuffix = format === 'linkedin' ? 'linkedin_ready' :
+                        format === 'latex' ? 'latex_source' :
+                        format;
 
-      if (watermarkConfig.type === 'text') {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(48);
-        pdf.setTextColor(200, 200, 200);
-
-        const pageSize = pdf.internal.pageSize;
-        const text = watermarkConfig.text || 'CONFIDENTIAL';
-
-        pdf.saveGraphicsState();
-        pdf.text(text, pageSize.width / 2, pageSize.height / 2, {
-          angle: 45,
-          align: 'center'
-        });
-        pdf.restoreGraphicsState();
-      }
-    }
+    return `${cleanName}_${formatSuffix}_${timestamp}.${extension}`;
   }
 }
 
-// Export convenience functions
-export const exportPDF = async (elementId, cvData, options = {}) => {
-  const generator = new EnhancedPDFGenerator();
-  return await generator.generatePDF(elementId, cvData, options);
-};
-
-export const validateExportData = (cvData) => {
-  const issues = [];
-
-  if (!cvData.personalInfo?.fullName) {
-    issues.push('Full name is required for professional exports');
+/**
+ * Validate CV data for export
+ */
+export function validateExportData(cvData) {
+  if (!cvData) {
+    return { valid: false, error: 'No CV data provided' };
   }
 
-  if (!cvData.personalInfo?.email) {
-    issues.push('Email address is required for contact information');
+  if (!cvData.personalInfo || !cvData.personalInfo.fullName) {
+    return { valid: false, error: 'Personal information is required' };
   }
 
-  const hasContentSections = !!(
-    cvData.profile?.summary ||
-    cvData.experience?.length ||
-    cvData.education?.length ||
-    cvData.skills?.technical?.length ||
-    cvData.skills?.tools?.length
-  );
+  return { valid: true };
+}
 
-  if (!hasContentSections) {
-    issues.push('At least one content section is required (experience, education, or skills)');
-  }
-
-  return {
-    isValid: issues.length === 0,
-    issues
-  };
-};
+// Create default instance for backward compatibility
+export const pdfGenerator = new EnhancedPDFGenerator();

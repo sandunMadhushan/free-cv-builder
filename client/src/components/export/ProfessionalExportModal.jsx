@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../common/Button';
 import { Select } from '../common/AdvancedFormComponents';
 import { Input } from '../common/Input';
@@ -11,6 +11,7 @@ import {
   validateExportData
 } from '../../utils/enhancedPDFGenerator';
 import { useCVStore } from '../../store/cvStore';
+import { useTemplateStore } from '../../store/templateStore';
 
 export const ProfessionalExportModal = ({ isOpen, onClose }) => {
   const [exportConfig, setExportConfig] = useState({
@@ -36,26 +37,85 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
   const [validationResult, setValidationResult] = useState({ isValid: true, issues: [] });
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
-  const cvData = useCVStore((state) => state.cvData);
+  const personalInfo = useCVStore((state) => state.personalInfo);
+  const profile = useCVStore((state) => state.profile);
+  const experience = useCVStore((state) => state.experience);
+  const education = useCVStore((state) => state.education);
+  const skills = useCVStore((state) => state.skills);
+  const projects = useCVStore((state) => state.projects);
+  const certifications = useCVStore((state) => state.certifications);
+  const languages = useCVStore((state) => state.languages);
+  const sectionOrder = useCVStore((state) => state.sectionOrder);
+  const activeSections = useCVStore((state) => state.activeSections);
+
+  // Get template configuration
+  const selectedTemplate = useTemplateStore((state) => state.selectedTemplate);
+  const customization = useTemplateStore((state) => state.customization);
+
+  const cvData = useMemo(() => ({
+    personalInfo,
+    profile,
+    experience,
+    education,
+    skills,
+    projects,
+    certifications,
+    languages,
+    sectionOrder,
+    activeSections
+  }), [personalInfo, profile, experience, education, skills, projects, certifications, languages, sectionOrder, activeSections]);
+
+  const templateConfig = useMemo(() => ({
+    selectedTemplate,
+    customization
+  }), [selectedTemplate, customization]);
 
   // Validate CV data on component mount and when data changes
   useEffect(() => {
     const validation = validateExportData(cvData);
     setValidationResult(validation);
+  }, [cvData]);
 
-    // Auto-generate filename
+  // Auto-generate filename when name changes
+  useEffect(() => {
     if (!exportConfig.filename && cvData.personalInfo?.fullName) {
       const generator = new EnhancedPDFGenerator();
-      const suggestedFilename = generator.generateFilename(cvData, exportConfig);
+      let suggestedFilename;
+
+      // Use format-specific filename generation
+      if (exportConfig.format === 'docx') {
+        suggestedFilename = generator.generateDOCXFilename(cvData, exportConfig);
+      } else {
+        suggestedFilename = generator.generateFilename(cvData, exportConfig);
+      }
+
       setExportConfig(prev => ({ ...prev, filename: suggestedFilename }));
     }
-  }, [cvData, exportConfig.format, exportConfig.quality]);
+  }, [cvData.personalInfo?.fullName, exportConfig.format, exportConfig.quality, exportConfig.filename]);
 
   const handleExportConfigChange = (key, value) => {
-    setExportConfig(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setExportConfig(prev => {
+      const newConfig = {
+        ...prev,
+        [key]: value
+      };
+
+      // When format changes, regenerate filename with correct extension
+      if (key === 'format' && cvData.personalInfo?.fullName) {
+        const generator = new EnhancedPDFGenerator();
+        let suggestedFilename;
+
+        if (value === 'docx') {
+          suggestedFilename = generator.generateDOCXFilename(cvData, { ...newConfig, format: value });
+        } else {
+          suggestedFilename = generator.generateFilename(cvData, { ...newConfig, format: value });
+        }
+
+        newConfig.filename = suggestedFilename;
+      }
+
+      return newConfig;
+    });
   };
 
   const handleCustomOptionChange = (key, value) => {
@@ -104,7 +164,8 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
         ...exportConfig,
         metadata,
         password: exportConfig.password || null,
-        filename: exportConfig.filename || undefined
+        filename: exportConfig.filename || undefined,
+        templateConfig // Add template configuration for styling
       };
 
       // Generate PDF
@@ -113,6 +174,13 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
       clearInterval(progressInterval);
       setExportProgress(100);
       setExportResult(result);
+
+      // Close modal after successful export with a brief delay
+      if (result.success) {
+        setTimeout(() => {
+          onClose(); // Close the export options window
+        }, 2000); // Allow user to see success message for 2 seconds
+      }
 
     } catch (error) {
       console.error('Export error:', error);
@@ -312,7 +380,7 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
                   label="Filename"
                   value={exportConfig.filename}
                   onChange={(e) => handleExportConfigChange('filename', e.target.value)}
-                  placeholder="resume.pdf"
+                  placeholder={exportConfig.format === 'docx' ? 'resume.docx' : 'resume.pdf'}
                 />
 
                 <Input
@@ -416,7 +484,7 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
             <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-primary-900 dark:text-primary-100">
-                  Generating professional PDF...
+                  Generating professional {exportConfig.format === 'docx' ? 'DOCX document' : 'PDF'}...
                 </span>
                 <span className="text-sm text-primary-700 dark:text-primary-300">
                   {exportProgress}%
@@ -505,7 +573,10 @@ export const ProfessionalExportModal = ({ isOpen, onClose }) => {
                 disabled={!validationResult.isValid || isExporting}
                 loading={isExporting}
               >
-                {isExporting ? 'Generating...' : 'Export PDF'}
+                {isExporting
+                  ? 'Generating...'
+                  : `Export ${exportConfig.format === 'docx' ? 'DOCX' : 'PDF'}`
+                }
               </Button>
             </div>
           </div>
