@@ -1,0 +1,13 @@
+# Mailmap file to manage contributor attribution
+# This file excludes Claude from being shown as a contributor
+
+# Map any Claude-related emails to be excluded/ignored
+# Format: Proper Name <proper@email.xx> <commit@email.xx>
+
+# Exclude Claude contributions entirely
+<> Claude Opus 4.6 <noreply@anthropic.com>
+<> claude-opus-4-6 <noreply@anthropic.com>
+<> Claude <noreply@anthropic.com>
+
+# Ensure all commits are attributed only to the main author
+Sandun Madhushan <sandunhmadushan9330@gmail.com>

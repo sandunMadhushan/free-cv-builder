@@ -153,13 +153,23 @@ export const Footer = () => {
                           : "⭐ Starring...",
                       });
 
-                      // Set pending star flag - this will trigger the toggle action
-                      pendingStarRef.current = true;
+                      // Execute the star/unstar action immediately
+                      console.log("🎯 Executing auto-star action immediately:", {
+                        currentlyStarred: isCurrentlyStarred,
+                        action: isCurrentlyStarred ? 'unstar' : 'star'
+                      });
+
+                      // Small delay to ensure UI updates first
+                      setTimeout(() => {
+                        handleStarRepo(true);
+                      }, 500);
 
                     } catch (error) {
                       console.error("❌ Error checking star status for auto-toggle:", error);
                       // Fallback to normal starring if status check fails
-                      pendingStarRef.current = true;
+                      setTimeout(() => {
+                        handleStarRepo(true);
+                      }, 500);
                     }
                   }, 2000); // Increased delay to allow GitHub star status to propagate across sessions
                 } else {
@@ -480,13 +490,23 @@ export const Footer = () => {
                 : "⭐ Starring...",
             });
 
-            // Set pending star flag - this will trigger the toggle action
-            pendingStarRef.current = true;
+            // Execute the star/unstar action immediately
+            console.log("🎯 Executing session auto-star action immediately:", {
+              currentlyStarred: isCurrentlyStarred,
+              action: isCurrentlyStarred ? 'unstar' : 'star'
+            });
+
+            // Small delay to ensure UI updates first
+            setTimeout(() => {
+              handleStarRepo(true);
+            }, 500);
 
           } catch (error) {
             console.error("❌ Error checking star status for session auto-toggle:", error);
             // Fallback to normal starring if status check fails
-            pendingStarRef.current = true;
+            setTimeout(() => {
+              handleStarRepo(true);
+            }, 500);
           }
         }, 2000); // Increased delay to allow GitHub star status to propagate across sessions
       } else {
@@ -738,8 +758,8 @@ export const Footer = () => {
         statusMatch: currentStarStatus === isStarred
       });
 
-      // Update local state to match server reality
-      if (statusData.authenticated && currentStarStatus !== isStarred) {
+      // Update local state to match server reality (but only for non-automatic actions)
+      if (statusData.authenticated && currentStarStatus !== isStarred && !skipAuthCheck) {
         console.log("🔄 Updating local star status to match server:", {
           from: isStarred,
           to: currentStarStatus
