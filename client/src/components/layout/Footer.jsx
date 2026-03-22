@@ -12,6 +12,9 @@ export const Footer = () => {
   // Ref to prevent auth status checks from overriding fresh authentication
   const freshAuthRef = useRef(false);
 
+  // Ref to trigger starring after state updates
+  const pendingStarRef = useRef(false);
+
   const API_BASE_URL =
     import.meta.env.VITE_API_URL || "https://cv-builder-api-fexd.onrender.com";
 
@@ -23,9 +26,13 @@ export const Footer = () => {
       const authToken = urlParams.get('token');
 
       if (githubAuth === 'success') {
+        // IMMEDIATELY set fresh auth protection BEFORE any async operations
+        freshAuthRef.current = true;
+
         console.log("🔄 Detected OAuth success via URL fallback", {
           hasToken: !!authToken,
-          token: authToken ? `${authToken.substring(0, 8)}...` : null
+          token: authToken ? `${authToken.substring(0, 8)}...` : null,
+          freshAuthProtection: 'SET IMMEDIATELY'
         });
 
         // Check if this was from an OAuth state (intent to star)
@@ -76,8 +83,7 @@ export const Footer = () => {
                 setIsAuthenticated(true);
                 setUser(data.user);
 
-                // Mark as fresh auth to prevent checkAuthStatus from overriding
-                freshAuthRef.current = true;
+                // Keep fresh auth protection active
                 setTimeout(() => {
                   freshAuthRef.current = false;
                   console.log("🔓 Fresh auth protection expired - normal auth checks resumed");
@@ -96,12 +102,11 @@ export const Footer = () => {
                     text: "✅ Authentication successful! Starring repository...",
                   });
 
-                  // Star immediately since we're already authenticated
-                  console.log("🌟 Auto-starring repository immediately after OAuth completion", {
-                    isAuthenticatedState: true,
-                    willSkipAuthCheck: true
+                  // Set pending star flag - the useEffect will handle it when state updates
+                  pendingStarRef.current = true;
+                  console.log("🌟 Pending star flag set - will execute after state updates", {
+                    pendingStarRef: pendingStarRef.current
                   });
-                  setTimeout(() => handleStarRepo(true), 500);
                 } else {
                   setStarMessage({
                     type: "success",
@@ -221,8 +226,28 @@ export const Footer = () => {
   useEffect(() => {
     if (isAuthenticated) {
       checkStarStatus();
+
+      // Check if we have a pending star action
+      if (pendingStarRef.current) {
+        console.log("🌟 Pending star detected - executing now that auth state is ready", {
+          isAuthenticated,
+          user: user?.login,
+          pendingStar: pendingStarRef.current
+        });
+
+        pendingStarRef.current = false;
+
+        // Small delay to ensure state is fully settled
+        setTimeout(() => {
+          console.log("🎯 Executing pending star action with confirmed auth state", {
+            isAuthenticated,
+            user: user?.login
+          });
+          handleStarRepo(true);
+        }, 300);
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const fetchStarCount = async () => {
     try {
@@ -290,8 +315,7 @@ export const Footer = () => {
         setIsAuthenticated(true);
         setUser(data.user);
 
-        // Mark as fresh auth to prevent checkAuthStatus from overriding
-        freshAuthRef.current = true;
+        // Keep fresh auth protection active
         setTimeout(() => {
           freshAuthRef.current = false;
           console.log("🔓 Fresh auth protection expired - normal auth checks resumed");
@@ -309,14 +333,11 @@ export const Footer = () => {
           text: "✅ Authentication complete! Starring repository...",
         });
 
-        // Star immediately since we're authenticated
-        setTimeout(() => {
-          console.log("🌟 Auto-starring repository after session establishment", {
-            isAuthenticatedState: true,
-            willSkipAuthCheck: true
-          });
-          handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
-        }, 500);
+        // Set pending star flag - the useEffect will handle it when state updates
+        pendingStarRef.current = true;
+        console.log("🌟 Pending star flag set - will execute after state updates", {
+          pendingStarRef: pendingStarRef.current
+        });
       } else {
         console.error("❌ Session establishment returned success=false:", data);
         throw new Error(data.message || "Session establishment failed");
