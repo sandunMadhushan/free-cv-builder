@@ -197,22 +197,35 @@ export const Footer = () => {
 
     initializeData();
 
-    // Auto-refresh star count when user comes back to the tab
+    // Auto-refresh star count and status when user comes back to the tab
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (!document.hidden && isAuthenticated) {
+        console.log("👁️ Tab became visible - checking for star status changes across sessions");
         setTimeout(() => {
+          // Always fetch fresh star count and status to detect cross-session changes
           fetchStarCount();
-          if (isAuthenticated) {
-            checkStarStatus();
-          }
+          checkStarStatus();
         }, 1000);
       }
     };
 
+    // Auto-refresh when window gains focus (switching between browser windows)
+    const handleWindowFocus = () => {
+      if (isAuthenticated) {
+        console.log("🔍 Window gained focus - checking for star status changes across browsers");
+        setTimeout(() => {
+          fetchStarCount();
+          checkStarStatus();
+        }, 500);
+      }
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
 
       // Clean up any GitHub auth handlers on unmount
       if (window.githubAuthHandlers) {
@@ -252,6 +265,26 @@ export const Footer = () => {
     }
   }, [isAuthenticated, user]);
 
+  // Periodic star status sync for real-time updates across sessions
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    console.log("🔄 Setting up periodic star status sync for cross-session updates");
+
+    const syncInterval = setInterval(() => {
+      // Only sync if tab is visible and user is authenticated
+      if (!document.hidden && isAuthenticated) {
+        console.log("🔄 Periodic sync - checking for star status changes");
+        checkStarStatus();
+      }
+    }, 45000); // Check every 45 seconds
+
+    return () => {
+      console.log("🛑 Clearing periodic star status sync");
+      clearInterval(syncInterval);
+    };
+  }, [isAuthenticated, accessToken]);
+
   const fetchStarCount = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/repo/stars`, {
@@ -269,8 +302,20 @@ export const Footer = () => {
         console.warn("Star count API returned error:", data.error, data.message);
       }
 
+      // Detect star count changes (possibly from other sessions)
+      const newStarCount = data.starCount || 0;
+      const previousStarCount = starCount;
+
+      if (previousStarCount !== null && previousStarCount !== newStarCount) {
+        console.log("📊 Star count changed:", {
+          previous: previousStarCount,
+          current: newStarCount,
+          difference: newStarCount - previousStarCount
+        });
+      }
+
       setLastStarCount(starCount);
-      setStarCount(data.starCount || 0);
+      setStarCount(newStarCount);
     } catch (error) {
       console.error("Failed to fetch star count:", error);
       setStarCount(0); // Fallback when API fails
@@ -434,7 +479,37 @@ export const Footer = () => {
       const data = await response.json();
 
       if (data.authenticated) {
-        setIsStarred(data.isStarred);
+        const newStarStatus = data.isStarred;
+        const previousStarStatus = isStarred;
+
+        // Detect changes from other browser sessions
+        if (previousStarStatus !== null && previousStarStatus !== newStarStatus) {
+          console.log("🔄 Star status changed in another session!", {
+            previous: previousStarStatus,
+            current: newStarStatus,
+            user: user?.login
+          });
+
+          // Show notification about cross-session change
+          setStarMessage({
+            type: "info",
+            text: newStarStatus
+              ? "⭐ Repository was starred in another browser session"
+              : "⭐ Repository was unstarred in another browser session",
+          });
+
+          // Also refresh star count to get the latest numbers
+          setTimeout(() => {
+            fetchStarCount();
+          }, 1000);
+
+          // Clear notification after delay
+          setTimeout(() => {
+            setStarMessage(null);
+          }, 4000);
+        }
+
+        setIsStarred(newStarStatus);
       }
     } catch (error) {
       console.error("Failed to check star status:", error);
