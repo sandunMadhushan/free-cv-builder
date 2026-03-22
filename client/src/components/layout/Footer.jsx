@@ -36,11 +36,29 @@ export const Footer = () => {
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+      // Clean up any GitHub auth handlers on unmount
+      if (window.githubAuthHandlers) {
+        console.log("🧹 Component unmounting - cleaning up GitHub auth handlers");
+        window.githubAuthHandlers.forEach(handler => {
+          window.removeEventListener("message", handler);
+        });
+        window.githubAuthHandlers = [];
+      }
     };
   }, []);
 
-  // Check auth status when component mounts
+  // Check auth status when component mounts and clean up any leftover handlers
   useEffect(() => {
+    // Clean up any existing GitHub auth handlers on mount
+    if (window.githubAuthHandlers) {
+      console.log("🧹 Cleaning up existing GitHub auth handlers");
+      window.githubAuthHandlers.forEach(handler => {
+        window.removeEventListener("message", handler);
+      });
+      window.githubAuthHandlers = [];
+    }
+
     if (isAuthenticated) {
       checkStarStatus();
     }
@@ -73,7 +91,12 @@ export const Footer = () => {
 
   const establishSession = async (userData) => {
     try {
-      console.log("Establishing session with user data...");
+      console.log("🔄 Establishing session with user data...", {
+        hasUser: !!userData,
+        hasToken: !!userData?.access_token,
+        userId: userData?.id,
+        username: userData?.login
+      });
 
       const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
         method: "POST",
@@ -87,13 +110,27 @@ export const Footer = () => {
         }),
       });
 
+      console.log("📡 Session establishment response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Session establishment failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
-      console.log("Session establishment response:", data);
+      console.log("✅ Session establishment response:", data);
 
       if (data.success && data.authenticated) {
         // Update local state
         setIsAuthenticated(true);
         setUser(data.user);
+
+        console.log("🎉 Session successfully established! User is now authenticated");
 
         // Show success message and proceed with starring
         setStarMessage({
@@ -103,7 +140,7 @@ export const Footer = () => {
 
         // Wait a moment then proceed with starring
         setTimeout(async () => {
-          console.log("Session established successfully, verifying authentication before starring");
+          console.log("🔍 Double-checking authentication before starring...");
 
           // Double-check authentication status before proceeding
           const authResult = await checkAuthStatus();
@@ -111,22 +148,40 @@ export const Footer = () => {
             console.log("✅ Authentication verified, proceeding to star repository");
             handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
           } else {
-            console.log("❌ Authentication verification failed");
+            console.log("❌ Authentication verification failed after session establishment");
             setStarMessage({
               type: "info",
-              text: "❌ Authentication verification failed. Please try again.",
+              text: "❌ Authentication verification failed. Please try clicking the star button again.",
             });
           }
-        }, 500);
+        }, 1000);
       } else {
-        throw new Error(data.message || "Failed to establish session");
+        console.error("❌ Session establishment returned success=false:", data);
+        throw new Error(data.message || "Session establishment failed");
       }
     } catch (error) {
-      console.error("Failed to establish session:", error);
-      setStarMessage({
-        type: "info",
-        text: "✅ Authenticated! Please click the star button to complete the process.",
+      console.error("❌ Session establishment error:", {
+        message: error.message,
+        stack: error.stack
       });
+
+      // More specific error handling
+      if (error.message.includes('HTTP 401')) {
+        setStarMessage({
+          type: "info",
+          text: "❌ Authentication failed. The GitHub token may be invalid. Please try again.",
+        });
+      } else if (error.message.includes('HTTP 500')) {
+        setStarMessage({
+          type: "info",
+          text: "❌ Server error during authentication. Please try again in a moment.",
+        });
+      } else {
+        setStarMessage({
+          type: "info",
+          text: "❌ Authentication session failed. Please click the star button to try again.",
+        });
+      }
     }
   };
 
@@ -247,17 +302,40 @@ export const Footer = () => {
               if (popup.closed) {
                 console.log("🔍 Popup closed, checking auth status...");
                 clearInterval(checkClosedInterval);
-                // Check if auth was successful
+
+                // Clean up any remaining handlers
+                if (window.githubAuthHandlers) {
+                  window.githubAuthHandlers.forEach(handler => {
+                    window.removeEventListener("message", handler);
+                  });
+                  window.githubAuthHandlers = [];
+                }
+
+                // Check if auth was successful after popup closed
                 setTimeout(async () => {
+                  console.log("🔍 Checking authentication status after popup close...");
+                  setStarMessage({
+                    type: "success",
+                    text: "🔍 Checking authentication status...",
+                  });
+
                   const authResult = await checkAuthStatus();
                   if (authResult) {
                     console.log("✅ Auth successful via popup close detection");
+                    setStarMessage({
+                      type: "success",
+                      text: "✅ Authentication successful! Starring repository...",
+                    });
                     // Try to star after successful auth
-                    setTimeout(() => handleStarRepo(true), 500);
+                    setTimeout(() => handleStarRepo(true), 1000);
                   } else {
                     console.log("❌ Auth not successful after popup close");
+                    setStarMessage({
+                      type: "info",
+                      text: "❌ Authentication was not completed. Please try clicking the star button again.",
+                    });
                   }
-                }, 1000);
+                }, 1500);
               }
             } catch (error) {
               // Popup might be from different origin, ignore cross-origin errors
@@ -281,7 +359,11 @@ export const Footer = () => {
 
             if (event.data.type === "github-auth-success") {
               console.log("🎉 GitHub auth success message received");
-              popup.close();
+
+              // Immediately close popup and clear intervals
+              if (popup && !popup.closed) {
+                popup.close();
+              }
               clearInterval(checkClosedInterval);
 
               // Show success message
@@ -298,10 +380,14 @@ export const Footer = () => {
                 console.error("❌ No user data received from popup");
                 setStarMessage({
                   type: "info",
-                  text: "❌ Authentication failed - no user data received",
+                  text: "❌ Authentication failed - no user data received. Please try clicking the star button again.",
                 });
                 return;
               }
+
+              // Clean up this specific handler before establishing session
+              window.removeEventListener("message", handleMessage);
+              window.githubAuthHandlers = window.githubAuthHandlers?.filter(h => h !== handleMessage) || [];
 
               // Establish session with user data
               establishSession(userData);
@@ -446,7 +532,12 @@ export const Footer = () => {
         <div className="flex items-center space-x-3">
           {/* Star count button */}
           <button
-            onClick={handleStarRepo}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("🖱️ Star button clicked by user");
+              handleStarRepo(false); // Explicitly set skipAuthCheck to false for button clicks
+            }}
             disabled={isStarring}
             className={`flex items-center space-x-2 text-sm transition-all duration-300 group px-3 py-1.5 rounded-full ${
               isStarring
