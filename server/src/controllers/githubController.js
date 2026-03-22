@@ -306,36 +306,37 @@ class GitHubController {
           sessionId: req.sessionID,
           hasUser: !!req.session.githubUser,
           hasToken: !!req.session.githubAccessToken,
-          userId: req.session.githubUser?.id
+          userId: req.session.githubUser?.id,
+          cookie: req.session.cookie
         });
 
-        const isProduction = process.env.NODE_ENV === 'production';
-
-        // Force session cookie to be set
-        res.cookie('cv-builder.sid', req.sessionID, {
-          httpOnly: false,
-          secure: isProduction, // true in production, false in development
-          sameSite: isProduction ? 'none' : 'lax', // 'none' requires secure: true
-          path: '/',
-          maxAge: 24 * 60 * 60 * 1000
-        });
-
-        console.log('🍪 Session cookie set:', {
-          name: 'cv-builder.sid',
-          sessionId: req.sessionID,
-          secure: isProduction,
-          sameSite: isProduction ? 'none' : 'lax'
-        });
+        console.log('🍪 Session cookie will be set automatically by express-session');
 
         // Remove the token after successful use
         delete global.tempAuthStore[token];
 
-        res.json({
+        // Send response - express-session will automatically set the cookie
+        const responseData = {
           success: true,
           authenticated: true,
           user: authData.user,
           sessionId: req.sessionID,
           message: 'Authentication established successfully'
+        };
+
+        // Log what we're sending
+        console.log('📤 Sending auth response:', {
+          sessionId: req.sessionID,
+          userId: authData.user.id,
+          username: authData.user.login
+        });
+
+        res.json(responseData);
+
+        // Log headers after response is queued (for debugging)
+        console.log('📋 Response headers set:', {
+          setCookie: res.getHeader('Set-Cookie'),
+          accessControl: res.getHeader('Access-Control-Allow-Origin')
         });
       });
 
