@@ -25,9 +25,29 @@ export const Footer = () => {
           token: authToken ? `${authToken.substring(0, 8)}...` : null
         });
 
+        // Check if this was from an OAuth state (intent to star)
+        const oauthState = sessionStorage.getItem('cv-builder-oauth-state');
+        let shouldAutoStar = false;
+
+        if (oauthState) {
+          try {
+            const state = JSON.parse(oauthState);
+            if (state.intentToStar && Date.now() - state.timestamp < 5 * 60 * 1000) { // 5 min
+              shouldAutoStar = true;
+              console.log("🎯 OAuth was initiated for starring - will proceed automatically");
+            }
+            // Clean up state
+            sessionStorage.removeItem('cv-builder-oauth-state');
+          } catch (error) {
+            console.error("Error parsing OAuth state:", error);
+          }
+        }
+
         setStarMessage({
           type: "success",
-          text: "🔍 GitHub authentication detected! Establishing session...",
+          text: shouldAutoStar
+            ? "🔍 GitHub authentication successful! Establishing session and starring..."
+            : "🔍 GitHub authentication successful! Establishing session...",
         });
 
         // Clean up URL parameters
@@ -49,101 +69,32 @@ export const Footer = () => {
               console.log("✅ Session established via auth token:", data);
 
               if (data.success && data.authenticated) {
-                // Store auth data temporarily in localStorage as backup
-                const authBackup = {
-                  user: data.user,
-                  timestamp: Date.now(),
-                  sessionId: data.sessionId
-                };
-                localStorage.setItem('cv-builder-auth-backup', JSON.stringify(authBackup));
-                console.log("💾 Stored auth backup:", { sessionId: data.sessionId, userId: data.user?.id });
-
                 // Update local state
                 setIsAuthenticated(true);
                 setUser(data.user);
 
-                setStarMessage({
-                  type: "success",
-                  text: "✅ Authentication successful! Starring repository...",
-                });
-
-                // Wait longer for state to update, then verify auth before starring
-                setTimeout(async () => {
-                  console.log("🔍 Verifying authentication state before starring...", {
-                    sessionId: data.sessionId,
-                    localAuth: isAuthenticated
+                if (shouldAutoStar) {
+                  setStarMessage({
+                    type: "success",
+                    text: "✅ Authentication successful! Starring repository...",
                   });
 
-                  // Double-check auth status to ensure session is properly established
-                  const authVerification = await checkAuthStatus();
-
-                  if (authVerification) {
-                    console.log("✅ Authentication verified, proceeding to star");
-                    // Clean up backup since session is working
-                    localStorage.removeItem('cv-builder-auth-backup');
+                  // Auto-star after short delay
+                  setTimeout(() => {
+                    console.log("🌟 Auto-starring repository after OAuth completion");
                     handleStarRepo(true);
-                  } else {
-                    console.log("❌ Session verification failed, using backup auth for direct API call");
+                  }, 1500);
+                } else {
+                  setStarMessage({
+                    type: "success",
+                    text: "✅ Authentication successful!",
+                  });
 
-                    // Use backup auth data for direct API call
-                    const backupAuth = localStorage.getItem('cv-builder-auth-backup');
-                    if (backupAuth) {
-                      const authData = JSON.parse(backupAuth);
-                      console.log("🔄 Using backup auth data for star API call");
-
-                      try {
-                        const starResponse = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
-                          method: "POST",
-                          credentials: "include",
-                          headers: {
-                            "Content-Type": "application/json",
-                            "X-Session-Backup": authData.sessionId
-                          }
-                        });
-
-                        if (starResponse.ok) {
-                          const starData = await starResponse.json();
-                          console.log("✅ Star API call successful with backup auth:", starData);
-
-                          setStarMessage({
-                            type: "success",
-                            text: "⭐ Repository starred successfully!",
-                          });
-
-                          // Update UI state
-                          setIsAuthenticated(true);
-                          setUser(data.user);
-                          setIsStarred(true);
-                          if (starData.starCount) {
-                            setStarCount(starData.starCount);
-                          }
-
-                          // Clean up backup auth
-                          localStorage.removeItem('cv-builder-auth-backup');
-
-                          // Refresh star count after delay
-                          setTimeout(fetchStarCount, 2000);
-                          return;
-                        } else {
-                          console.error("❌ Star API call failed with status:", starResponse.status);
-                          throw new Error(`Star API call failed: ${starResponse.status}`);
-                        }
-                      } catch (starError) {
-                        console.error("❌ Star API call with backup auth failed:", starError);
-                        setStarMessage({
-                          type: "info",
-                          text: "❌ Authentication succeeded but starring failed. Please refresh the page and try again.",
-                        });
-                      }
-                    } else {
-                      console.error("❌ No backup auth data found");
-                      setStarMessage({
-                        type: "info",
-                        text: "❌ Session verification failed. Please refresh the page and try again.",
-                      });
-                    }
-                  }
-                }, 3000); // Longer delay for session propagation
+                  // Clear message after delay
+                  setTimeout(() => {
+                    setStarMessage(null);
+                  }, 3000);
+                }
                 return;
               }
             }
@@ -446,12 +397,52 @@ export const Footer = () => {
 
       console.log("🔐 User not authenticated, initiating OAuth...");
 
-      // Clear any existing message handlers to prevent conflicts
-      const existingHandlers = window.githubAuthHandlers || [];
-      existingHandlers.forEach(handler => {
-        window.removeEventListener("message", handler);
-      });
-      window.githubAuthHandlers = [];
+      // Store current state for restoration after OAuth
+      const authState = {
+        intentToStar: true,
+        timestamp: Date.now(),
+        currentPath: window.location.pathname,
+        currentHash: window.location.hash
+      };
+      sessionStorage.setItem('cv-builder-oauth-state', JSON.stringify(authState));
+
+      // Initiate GitHub OAuth flow in same window
+      try {
+        console.log("📡 Fetching GitHub auth URL...");
+        const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await response.json();
+        console.log("🔑 Auth response:", data);
+
+        if (data.success && data.authUrl) {
+          console.log("🔄 Redirecting to GitHub OAuth (same window)...");
+
+          setStarMessage({
+            type: "success",
+            text: "🔄 Redirecting to GitHub for authentication...",
+          });
+
+          // Redirect the current window to GitHub OAuth
+          setTimeout(() => {
+            window.location.href = data.authUrl;
+          }, 1000);
+        } else {
+          setStarMessage({
+            type: "info",
+            text: "❌ Failed to initiate GitHub authentication",
+          });
+        }
+      } catch (error) {
+        console.error("❌ GitHub auth error:", error);
+        setStarMessage({
+          type: "info",
+          text: "❌ Failed to connect to authentication service",
+        });
+      }
+      return;
+    }
 
       // Initiate GitHub OAuth flow
       try {
