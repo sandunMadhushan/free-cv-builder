@@ -309,13 +309,22 @@ class GitHubController {
           userId: req.session.githubUser?.id
         });
 
+        const isProduction = process.env.NODE_ENV === 'production';
+
         // Force session cookie to be set
         res.cookie('cv-builder.sid', req.sessionID, {
           httpOnly: false,
-          secure: false,
-          sameSite: 'none',
+          secure: isProduction, // true in production, false in development
+          sameSite: isProduction ? 'none' : 'lax', // 'none' requires secure: true
           path: '/',
           maxAge: 24 * 60 * 60 * 1000
+        });
+
+        console.log('🍪 Session cookie set:', {
+          name: 'cv-builder.sid',
+          sessionId: req.sessionID,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax'
         });
 
         // Remove the token after successful use

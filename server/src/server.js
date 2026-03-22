@@ -46,6 +46,8 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
 // Session configuration
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key-here",
@@ -53,10 +55,10 @@ app.use(
     resave: false,
     saveUninitialized: true, // Create session for unauthenticated requests
     cookie: {
-      secure: false, // Keep false for Render's proxy setup
+      secure: isProduction, // true in production (HTTPS), false in development (HTTP)
       httpOnly: false, // Allow JavaScript access for popup scenarios
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'none', // Allow cross-site requests for OAuth (changed from 'lax')
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for production cross-site, 'lax' for development
       domain: undefined, // Let browser set the domain
       path: '/', // Ensure cookie is available for all paths
     },
