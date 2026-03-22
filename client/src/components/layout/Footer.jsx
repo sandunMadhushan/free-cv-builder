@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export const Footer = () => {
   const [starCount, setStarCount] = useState(null);
@@ -8,6 +8,9 @@ export const Footer = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [isStarred, setIsStarred] = useState(false);
+
+  // Ref to prevent auth status checks from overriding fresh authentication
+  const freshAuthRef = useRef(false);
 
   const API_BASE_URL =
     import.meta.env.VITE_API_URL || "https://cv-builder-api-fexd.onrender.com";
@@ -73,17 +76,25 @@ export const Footer = () => {
                 setIsAuthenticated(true);
                 setUser(data.user);
 
+                // Mark as fresh auth to prevent checkAuthStatus from overriding
+                freshAuthRef.current = true;
+                setTimeout(() => { freshAuthRef.current = false; }, 5000);
+
+                console.log("✅ Session established successfully, user authenticated:", {
+                  userId: data.user?.id,
+                  username: data.user?.login,
+                  shouldAutoStar
+                });
+
                 if (shouldAutoStar) {
                   setStarMessage({
                     type: "success",
                     text: "✅ Authentication successful! Starring repository...",
                   });
 
-                  // Auto-star after short delay
-                  setTimeout(() => {
-                    console.log("🌟 Auto-starring repository after OAuth completion");
-                    handleStarRepo(true);
-                  }, 1500);
+                  // Star immediately since we're already authenticated
+                  console.log("🌟 Auto-starring repository immediately after OAuth completion");
+                  setTimeout(() => handleStarRepo(true), 500);
                 } else {
                   setStarMessage({
                     type: "success",
@@ -263,6 +274,10 @@ export const Footer = () => {
         setIsAuthenticated(true);
         setUser(data.user);
 
+        // Mark as fresh auth to prevent checkAuthStatus from overriding
+        freshAuthRef.current = true;
+        setTimeout(() => { freshAuthRef.current = false; }, 5000);
+
         console.log("🎉 Session successfully established! User is now authenticated");
 
         // Show success message and proceed with starring
@@ -271,23 +286,11 @@ export const Footer = () => {
           text: "✅ Authentication complete! Starring repository...",
         });
 
-        // Wait a moment then proceed with starring
-        setTimeout(async () => {
-          console.log("🔍 Double-checking authentication before starring...");
-
-          // Double-check authentication status before proceeding
-          const authResult = await checkAuthStatus();
-          if (authResult) {
-            console.log("✅ Authentication verified, proceeding to star repository");
-            handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
-          } else {
-            console.log("❌ Authentication verification failed after session establishment");
-            setStarMessage({
-              type: "info",
-              text: "❌ Authentication verification failed. Please try clicking the star button again.",
-            });
-          }
-        }, 1000);
+        // Star immediately since we're authenticated
+        setTimeout(() => {
+          console.log("🌟 Auto-starring repository after session establishment");
+          handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
+        }, 500);
       } else {
         console.error("❌ Session establishment returned success=false:", data);
         throw new Error(data.message || "Session establishment failed");
@@ -321,6 +324,13 @@ export const Footer = () => {
   const checkAuthStatus = async () => {
     try {
       console.log("Checking GitHub auth status...");
+
+      // Don't override fresh authentication
+      if (freshAuthRef.current) {
+        console.log("🔒 Skipping auth status check - fresh authentication in progress");
+        return isAuthenticated;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
         method: "GET",
         credentials: "include",
