@@ -213,3 +213,405 @@ html {
   background: rgba(59, 130, 246, 0.8);
   border-radius: 10px;
 }
+
+/* Corporate Professional Transition Utilities */
+.transition-corporate {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-corporate-slow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-corporate-fast {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional Hover Effects */
+.hover-lift {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Focus Rings for Corporate Standards */
+.focus-ring {
+  @apply ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800;
+  transition: box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-ring-success {
+  @apply ring-2 ring-success-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800;
+  transition: box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-ring-warning {
+  @apply ring-2 ring-warning-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800;
+  transition: box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-ring-danger {
+  @apply ring-2 ring-danger-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800;
+  transition: box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional Button Interactions */
+.btn-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Subtle Gradient Animations for Corporate Feel */
+.gradient-corporate {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .gradient-corporate {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.gradient-corporate:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+}
+
+.dark .gradient-corporate:hover {
+  background: linear-gradient(135deg, #334155 0%, #475569 100%);
+}
+
+/* Professional Loading Animation */
+.loading-corporate {
+  animation: pulse-corporate 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-corporate {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Slow pulse for indicators */
+.pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Professional Slide Animations */
+.slide-in-corporate {
+  animation: slideInCorporate 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInCorporate {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Professional Fade Animations */
+.fade-in-corporate {
+  animation: fadeInCorporate 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInCorporate {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Form Validation Animations */
+.shake-error {
+  animation: shakeError 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes shakeError {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.checkmark-success {
+  animation: checkmarkSuccess 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkmarkSuccess {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+  }
+
+  .btn-press:active {
+    transform: none;
+  }
+}
+
+/* Touch-Optimized Interactions */
+
+/* Larger touch targets for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Enhanced active states for touch */
+.touch-active:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease-out;
+}
+
+/* Professional ripple effect simulation */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.ripple-effect::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.ripple-effect:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Touch-friendly drag handles */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Enhanced scrolling for touch devices */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Professional touch feedback */
+.touch-feedback {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-feedback:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* Haptic feedback simulation for supported devices */
+@media (hover: none) and (pointer: coarse) {
+  .haptic-light:active {
+    animation: hapticLight 0.1s ease-out;
+  }
+
+  .haptic-medium:active {
+    animation: hapticMedium 0.15s ease-out;
+  }
+
+  .haptic-heavy:active {
+    animation: hapticHeavy 0.2s ease-out;
+  }
+}
+
+@keyframes hapticLight {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+
+@keyframes hapticMedium {
+  0% { transform: scale(1); }
+  25% { transform: scale(0.98); }
+  75% { transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+
+@keyframes hapticHeavy {
+  0% { transform: scale(1); }
+  20% { transform: scale(0.96); }
+  40% { transform: scale(1.02); }
+  60% { transform: scale(0.99); }
+  80% { transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+
+/* Touch-optimized form elements */
+.touch-input {
+  font-size: 16px; /* Prevents zoom on iOS */
+  padding: 12px 16px;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Professional swipe indicators */
+.swipe-indicator {
+  position: relative;
+}
+
+.swipe-indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 20px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, currentColor 50%, transparent 100%);
+  transform: translateY(-50%);
+  opacity: 0.4;
+}
+
+/* Enhanced mobile button spacing */
+.mobile-button-group {
+  gap: 12px;
+}
+
+.mobile-button-group > * {
+  min-height: 48px;
+  padding: 12px 24px;
+}
+
+/* Professional pull-to-refresh styling */
+.pull-to-refresh {
+  transform: translateY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pull-to-refresh.pulling {
+  transform: translateY(60px);
+}
+
+/* Touch-friendly tab navigation */
+.touch-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.touch-tabs button {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 44px;
+}
+
+.touch-tabs button.active {
+  background: white;
+  color: #1f2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Professional loading skeleton for touch */
+.touch-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: touchSkeletonLoading 1.5s infinite;
+  border-radius: 8px;
+  min-height: 44px;
+}
+
+.dark .touch-skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes touchSkeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Safe area handling for mobile devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
