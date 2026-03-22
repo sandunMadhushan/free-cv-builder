@@ -388,4 +388,3 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 For support, feature requests, or bug reports, please [open an issue](https://github.com/sandunMadhushan/free-cv-builder/issues).
 
 **[🌐 Live Demo](https://free-cv-builder.netlify.app)** • **[📊 API Status](https://cv-builder-api-fexd.onrender.com)** • **[📖 Deployment Guide](./server/README.md)**
-# Contributors cleaned Sun Mar 22 08:43:31 SLST 2026
