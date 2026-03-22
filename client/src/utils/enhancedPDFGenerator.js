@@ -1336,7 +1336,7 @@ export class EnhancedPDFGenerator {
     // Experience
     if (experience && experience.length > 0) {
       text += 'PROFESSIONAL EXPERIENCE\n';
-      text += -'----------------------\n';
+      text += '----------------------\n';
       experience.forEach((exp, index) => {
         if (exp.position) text += `${exp.position}\n`;
         if (exp.company) text += `${exp.company}\n`;
@@ -1649,15 +1649,37 @@ ${languages.map(lang => `${lang.name}: ${lang.level}`).join(' \\textbullet\\ ')}
  * Validate CV data for export
  */
 export function validateExportData(cvData) {
+  const issues = [];
+
   if (!cvData) {
-    return { valid: false, error: 'No CV data provided' };
+    return { isValid: false, issues: ['No CV data provided'] };
   }
 
   if (!cvData.personalInfo || !cvData.personalInfo.fullName) {
-    return { valid: false, error: 'Personal information is required' };
+    issues.push('Full name is required in personal information');
   }
 
-  return { valid: true };
+  if (!cvData.personalInfo || !cvData.personalInfo.email) {
+    issues.push('Email address is required in personal information');
+  }
+
+  if (!cvData.profile || !cvData.profile.summary || !cvData.profile.summary.trim()) {
+    issues.push('Professional summary/profile section is recommended');
+  }
+
+  if (!cvData.experience || cvData.experience.length === 0) {
+    issues.push('At least one work experience entry is recommended');
+  }
+
+  if (!cvData.education || cvData.education.length === 0) {
+    issues.push('At least one education entry is recommended');
+  }
+
+  if (!cvData.skills || (!cvData.skills.technical || cvData.skills.technical.length === 0)) {
+    issues.push('Skills section is recommended for better visibility');
+  }
+
+  return { isValid: issues.length === 0, issues };
 }
 
 // Create default instance for backward compatibility
