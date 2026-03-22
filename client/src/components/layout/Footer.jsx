@@ -102,14 +102,57 @@ export const Footer = () => {
                 if (shouldAutoStar) {
                   setStarMessage({
                     type: "success",
-                    text: "✅ Authentication successful! Starring repository...",
+                    text: "✅ Authentication successful! Checking repository status...",
                   });
 
-                  // Set pending star flag - the useEffect will handle it when state updates
-                  pendingStarRef.current = true;
-                  console.log("🌟 Pending star flag set - will execute after state updates", {
-                    pendingStarRef: pendingStarRef.current
-                  });
+                  // Check current star status first, then toggle appropriately
+                  console.log("🔍 Auto-star requested - checking current star status to decide action");
+
+                  setTimeout(async () => {
+                    try {
+                      const statusHeaders = {};
+                      if (data.accessToken) {
+                        statusHeaders.Authorization = `Bearer ${data.accessToken}`;
+                      }
+
+                      const statusResponse = await fetch(
+                        `${API_BASE_URL}/api/auth/repo/star/status`,
+                        {
+                          method: "GET",
+                          credentials: "include",
+                          headers: statusHeaders,
+                        },
+                      );
+
+                      const statusData = await statusResponse.json();
+                      const isCurrentlyStarred = statusData.authenticated ? statusData.isStarred : false;
+
+                      console.log("🎯 Auto-star decision making:", {
+                        authenticated: statusData.authenticated,
+                        currentlyStarred: isCurrentlyStarred,
+                        willPerform: isCurrentlyStarred ? 'unstar' : 'star'
+                      });
+
+                      // Update local state to match server
+                      setIsStarred(isCurrentlyStarred);
+
+                      // Show appropriate message based on what we'll do
+                      setStarMessage({
+                        type: "success",
+                        text: isCurrentlyStarred
+                          ? "⭐ Repository already starred! Unstarring..."
+                          : "⭐ Repository not starred! Starring...",
+                      });
+
+                      // Set pending star flag - this will trigger the toggle action
+                      pendingStarRef.current = true;
+
+                    } catch (error) {
+                      console.error("❌ Error checking star status for auto-toggle:", error);
+                      // Fallback to normal starring if status check fails
+                      pendingStarRef.current = true;
+                    }
+                  }, 1000);
                 } else {
                   setStarMessage({
                     type: "success",
@@ -374,17 +417,60 @@ export const Footer = () => {
           freshAuthProtection: freshAuthRef.current
         });
 
-        // Show success message and proceed with starring
+        // Show success message and check what action to take
         setStarMessage({
           type: "success",
-          text: "✅ Authentication complete! Starring repository...",
+          text: "✅ Authentication complete! Checking repository status...",
         });
 
-        // Set pending star flag - the useEffect will handle it when state updates
-        pendingStarRef.current = true;
-        console.log("🌟 Pending star flag set - will execute after state updates", {
-          pendingStarRef: pendingStarRef.current
-        });
+        // Check current star status first, then toggle appropriately
+        console.log("🔍 Session established - checking current star status to decide action");
+
+        setTimeout(async () => {
+          try {
+            const statusHeaders = {};
+            if (data.accessToken) {
+              statusHeaders.Authorization = `Bearer ${data.accessToken}`;
+            }
+
+            const statusResponse = await fetch(
+              `${API_BASE_URL}/api/auth/repo/star/status`,
+              {
+                method: "GET",
+                credentials: "include",
+                headers: statusHeaders,
+              },
+            );
+
+            const statusData = await statusResponse.json();
+            const isCurrentlyStarred = statusData.authenticated ? statusData.isStarred : false;
+
+            console.log("🎯 Session auto-star decision making:", {
+              authenticated: statusData.authenticated,
+              currentlyStarred: isCurrentlyStarred,
+              willPerform: isCurrentlyStarred ? 'unstar' : 'star'
+            });
+
+            // Update local state to match server
+            setIsStarred(isCurrentlyStarred);
+
+            // Show appropriate message based on what we'll do
+            setStarMessage({
+              type: "success",
+              text: isCurrentlyStarred
+                ? "⭐ Repository already starred! Unstarring..."
+                : "⭐ Repository not starred! Starring...",
+            });
+
+            // Set pending star flag - this will trigger the toggle action
+            pendingStarRef.current = true;
+
+          } catch (error) {
+            console.error("❌ Error checking star status for session auto-toggle:", error);
+            // Fallback to normal starring if status check fails
+            pendingStarRef.current = true;
+          }
+        }, 1000);
       } else {
         console.error("❌ Session establishment returned success=false:", data);
         throw new Error(data.message || "Session establishment failed");
