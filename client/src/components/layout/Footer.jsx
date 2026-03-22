@@ -78,12 +78,16 @@ export const Footer = () => {
 
                 // Mark as fresh auth to prevent checkAuthStatus from overriding
                 freshAuthRef.current = true;
-                setTimeout(() => { freshAuthRef.current = false; }, 5000);
+                setTimeout(() => {
+                  freshAuthRef.current = false;
+                  console.log("🔓 Fresh auth protection expired - normal auth checks resumed");
+                }, 10000); // Extended to 10 seconds
 
                 console.log("✅ Session established successfully, user authenticated:", {
                   userId: data.user?.id,
                   username: data.user?.login,
-                  shouldAutoStar
+                  shouldAutoStar,
+                  freshAuthProtection: freshAuthRef.current
                 });
 
                 if (shouldAutoStar) {
@@ -93,7 +97,10 @@ export const Footer = () => {
                   });
 
                   // Star immediately since we're already authenticated
-                  console.log("🌟 Auto-starring repository immediately after OAuth completion");
+                  console.log("🌟 Auto-starring repository immediately after OAuth completion", {
+                    isAuthenticatedState: true,
+                    willSkipAuthCheck: true
+                  });
                   setTimeout(() => handleStarRepo(true), 500);
                 } else {
                   setStarMessage({
@@ -168,7 +175,16 @@ export const Footer = () => {
   // Fetch GitHub star count and auth status
   useEffect(() => {
     const initializeData = async () => {
-      await Promise.all([fetchStarCount(), checkAuthStatus()]);
+      // Check if we're in an OAuth flow - if so, skip auth status check to avoid race condition
+      const urlParams = new URLSearchParams(window.location.search);
+      const isOAuthFlow = urlParams.get('github_auth') === 'success';
+
+      if (isOAuthFlow) {
+        console.log("🔄 OAuth flow detected - skipping initial auth check to prevent race condition");
+        await fetchStarCount();
+      } else {
+        await Promise.all([fetchStarCount(), checkAuthStatus()]);
+      }
     };
 
     initializeData();
@@ -276,9 +292,16 @@ export const Footer = () => {
 
         // Mark as fresh auth to prevent checkAuthStatus from overriding
         freshAuthRef.current = true;
-        setTimeout(() => { freshAuthRef.current = false; }, 5000);
+        setTimeout(() => {
+          freshAuthRef.current = false;
+          console.log("🔓 Fresh auth protection expired - normal auth checks resumed");
+        }, 10000); // Extended to 10 seconds
 
-        console.log("🎉 Session successfully established! User is now authenticated");
+        console.log("🎉 Session successfully established! User is now authenticated", {
+          userId: data.user?.id,
+          username: data.user?.login,
+          freshAuthProtection: freshAuthRef.current
+        });
 
         // Show success message and proceed with starring
         setStarMessage({
@@ -288,7 +311,10 @@ export const Footer = () => {
 
         // Star immediately since we're authenticated
         setTimeout(() => {
-          console.log("🌟 Auto-starring repository after session establishment");
+          console.log("🌟 Auto-starring repository after session establishment", {
+            isAuthenticatedState: true,
+            willSkipAuthCheck: true
+          });
           handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
         }, 500);
       } else {
@@ -327,7 +353,10 @@ export const Footer = () => {
 
       // Don't override fresh authentication
       if (freshAuthRef.current) {
-        console.log("🔒 Skipping auth status check - fresh authentication in progress");
+        console.log("🔒 Skipping auth status check - fresh authentication in progress", {
+          isAuthenticated,
+          user: user?.login || 'null'
+        });
         return isAuthenticated;
       }
 
@@ -338,6 +367,13 @@ export const Footer = () => {
       const data = await response.json();
 
       console.log("Auth status response:", data);
+
+      // Double check we're not overriding fresh auth
+      if (freshAuthRef.current) {
+        console.log("🔒 Fresh auth detected during API call - not updating state");
+        return isAuthenticated;
+      }
+
       setIsAuthenticated(data.authenticated);
       setUser(data.user);
 
@@ -380,7 +416,9 @@ export const Footer = () => {
     console.log("🎯 handleStarRepo called:", {
       isAuthenticated,
       skipAuthCheck,
-      source: skipAuthCheck ? 'automatic' : 'button-click'
+      source: skipAuthCheck ? 'automatic' : 'button-click',
+      freshAuthActive: freshAuthRef.current,
+      userState: user?.login || 'null'
     });
 
     // Always check if user is actually authenticated before proceeding with starring
@@ -388,7 +426,12 @@ export const Footer = () => {
     if (!isAuthenticated) {
       // If skipAuthCheck is true but user still not authenticated, show an error
       if (skipAuthCheck) {
-        console.log("❌ Session establishment failed - user still not authenticated");
+        console.log("❌ Auto-starring failed - user authentication state lost", {
+          expectedAuthenticated: true,
+          actualAuthenticated: isAuthenticated,
+          freshAuthProtection: freshAuthRef.current,
+          suggestedAction: 'Check for race condition in auth status calls'
+        });
         setStarMessage({
           type: "info",
           text: "❌ Authentication failed. Please try again.",
