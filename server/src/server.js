@@ -56,9 +56,11 @@ app.use(
       secure: false, // Keep false for Render's proxy setup
       httpOnly: false, // Allow JavaScript access for popup scenarios
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax', // Allow cross-site requests for OAuth
+      sameSite: 'none', // Allow cross-site requests for OAuth (changed from 'lax')
       domain: undefined, // Let browser set the domain
+      path: '/', // Ensure cookie is available for all paths
     },
+    rolling: true, // Reset expiration on each request
   }),
 );
 

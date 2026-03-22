@@ -424,6 +424,21 @@ class GitHubController {
         }
 
         console.log('✅ Session established via auth token for user:', authData.user.login);
+        console.log('Session details:', {
+          sessionId: req.sessionID,
+          hasUser: !!req.session.githubUser,
+          hasToken: !!req.session.githubAccessToken,
+          userId: req.session.githubUser?.id
+        });
+
+        // Force session cookie to be set
+        res.cookie('cv-builder.sid', req.sessionID, {
+          httpOnly: false,
+          secure: false,
+          sameSite: 'none',
+          path: '/',
+          maxAge: 24 * 60 * 60 * 1000
+        });
 
         // Remove the token after successful use
         delete global.tempAuthStore[token];
@@ -432,6 +447,7 @@ class GitHubController {
           success: true,
           authenticated: true,
           user: authData.user,
+          sessionId: req.sessionID,
           message: 'Authentication established successfully'
         });
       });

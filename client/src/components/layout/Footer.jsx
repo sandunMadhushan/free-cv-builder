@@ -49,6 +49,15 @@ export const Footer = () => {
               console.log("✅ Session established via auth token:", data);
 
               if (data.success && data.authenticated) {
+                // Store auth data temporarily in localStorage as backup
+                const authBackup = {
+                  user: data.user,
+                  timestamp: Date.now(),
+                  sessionId: data.sessionId
+                };
+                localStorage.setItem('cv-builder-auth-backup', JSON.stringify(authBackup));
+                console.log("💾 Stored auth backup:", { sessionId: data.sessionId, userId: data.user?.id });
+
                 // Update local state
                 setIsAuthenticated(true);
                 setUser(data.user);
@@ -60,56 +69,81 @@ export const Footer = () => {
 
                 // Wait longer for state to update, then verify auth before starring
                 setTimeout(async () => {
-                  console.log("🔍 Verifying authentication state before starring...");
+                  console.log("🔍 Verifying authentication state before starring...", {
+                    sessionId: data.sessionId,
+                    localAuth: isAuthenticated
+                  });
 
                   // Double-check auth status to ensure session is properly established
                   const authVerification = await checkAuthStatus();
 
                   if (authVerification) {
                     console.log("✅ Authentication verified, proceeding to star");
+                    // Clean up backup since session is working
+                    localStorage.removeItem('cv-builder-auth-backup');
                     handleStarRepo(true);
                   } else {
-                    console.log("❌ Authentication verification failed, trying direct star API call");
+                    console.log("❌ Session verification failed, using backup auth for direct API call");
 
-                    // If session verification fails, try starring directly since we know backend session exists
-                    try {
-                      const starResponse = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
-                        method: "POST",
-                        credentials: "include",
-                        headers: { "Content-Type": "application/json" }
-                      });
+                    // Use backup auth data for direct API call
+                    const backupAuth = localStorage.getItem('cv-builder-auth-backup');
+                    if (backupAuth) {
+                      const authData = JSON.parse(backupAuth);
+                      console.log("🔄 Using backup auth data for star API call");
 
-                      if (starResponse.ok) {
-                        const starData = await starResponse.json();
-                        console.log("✅ Direct star API call successful:", starData);
-
-                        setStarMessage({
-                          type: "success",
-                          text: "⭐ Repository starred successfully!",
+                      try {
+                        const starResponse = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
+                          method: "POST",
+                          credentials: "include",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-Session-Backup": authData.sessionId
+                          }
                         });
 
-                        // Update UI state
-                        setIsAuthenticated(true);
-                        setUser(data.user);
-                        setIsStarred(true);
-                        if (starData.starCount) {
-                          setStarCount(starData.starCount);
-                        }
+                        if (starResponse.ok) {
+                          const starData = await starResponse.json();
+                          console.log("✅ Star API call successful with backup auth:", starData);
 
-                        // Refresh star count after delay
-                        setTimeout(fetchStarCount, 2000);
-                      } else {
-                        throw new Error("Star API call failed");
+                          setStarMessage({
+                            type: "success",
+                            text: "⭐ Repository starred successfully!",
+                          });
+
+                          // Update UI state
+                          setIsAuthenticated(true);
+                          setUser(data.user);
+                          setIsStarred(true);
+                          if (starData.starCount) {
+                            setStarCount(starData.starCount);
+                          }
+
+                          // Clean up backup auth
+                          localStorage.removeItem('cv-builder-auth-backup');
+
+                          // Refresh star count after delay
+                          setTimeout(fetchStarCount, 2000);
+                          return;
+                        } else {
+                          console.error("❌ Star API call failed with status:", starResponse.status);
+                          throw new Error(`Star API call failed: ${starResponse.status}`);
+                        }
+                      } catch (starError) {
+                        console.error("❌ Star API call with backup auth failed:", starError);
+                        setStarMessage({
+                          type: "info",
+                          text: "❌ Authentication succeeded but starring failed. Please refresh the page and try again.",
+                        });
                       }
-                    } catch (starError) {
-                      console.error("❌ Direct star API call failed:", starError);
+                    } else {
+                      console.error("❌ No backup auth data found");
                       setStarMessage({
                         type: "info",
-                        text: "❌ Authentication succeeded but starring failed. Please click the star button to try again.",
+                        text: "❌ Session verification failed. Please refresh the page and try again.",
                       });
                     }
                   }
-                }, 2500); // Increased delay for state updates
+                }, 3000); // Longer delay for session propagation
                 return;
               }
             }
