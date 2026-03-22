@@ -108,12 +108,15 @@ export const Footer = () => {
                   // Check current star status first, then toggle appropriately
                   console.log("🔍 Auto-star requested - checking current star status to decide action");
 
+                  // Add delay to allow GitHub systems to propagate star status across sessions
                   setTimeout(async () => {
                     try {
                       const statusHeaders = {};
                       if (data.accessToken) {
                         statusHeaders.Authorization = `Bearer ${data.accessToken}`;
                       }
+
+                      console.log("🔍 Making star status check request...");
 
                       const statusResponse = await fetch(
                         `${API_BASE_URL}/api/auth/repo/star/status`,
@@ -130,18 +133,20 @@ export const Footer = () => {
                       console.log("🎯 Auto-star decision making:", {
                         authenticated: statusData.authenticated,
                         currentlyStarred: isCurrentlyStarred,
-                        willPerform: isCurrentlyStarred ? 'unstar' : 'star'
+                        willPerform: isCurrentlyStarred ? 'unstar' : 'star',
+                        rawResponse: statusData,
+                        accessTokenUsed: !!data.accessToken
                       });
 
                       // Update local state to match server
                       setIsStarred(isCurrentlyStarred);
 
-                      // Show appropriate message based on what we'll do
+                      // Show appropriate user-friendly message based on what we'll do
                       setStarMessage({
                         type: "success",
                         text: isCurrentlyStarred
-                          ? "⭐ Repository already starred! Unstarring..."
-                          : "⭐ Repository not starred! Starring...",
+                          ? "⭐ Unstarring..."
+                          : "⭐ Starring...",
                       });
 
                       // Set pending star flag - this will trigger the toggle action
@@ -152,7 +157,7 @@ export const Footer = () => {
                       // Fallback to normal starring if status check fails
                       pendingStarRef.current = true;
                     }
-                  }, 1000);
+                  }, 2000); // Increased delay to allow GitHub star status to propagate across sessions
                 } else {
                   setStarMessage({
                     type: "success",
@@ -426,12 +431,15 @@ export const Footer = () => {
         // Check current star status first, then toggle appropriately
         console.log("🔍 Session established - checking current star status to decide action");
 
+        // Add delay to allow GitHub systems to propagate star status across sessions
         setTimeout(async () => {
           try {
             const statusHeaders = {};
             if (data.accessToken) {
               statusHeaders.Authorization = `Bearer ${data.accessToken}`;
             }
+
+            console.log("🔍 Making session star status check request...");
 
             const statusResponse = await fetch(
               `${API_BASE_URL}/api/auth/repo/star/status`,
@@ -448,18 +456,20 @@ export const Footer = () => {
             console.log("🎯 Session auto-star decision making:", {
               authenticated: statusData.authenticated,
               currentlyStarred: isCurrentlyStarred,
-              willPerform: isCurrentlyStarred ? 'unstar' : 'star'
+              willPerform: isCurrentlyStarred ? 'unstar' : 'star',
+              rawResponse: statusData,
+              accessTokenUsed: !!data.accessToken
             });
 
             // Update local state to match server
             setIsStarred(isCurrentlyStarred);
 
-            // Show appropriate message based on what we'll do
+            // Show appropriate user-friendly message based on what we'll do
             setStarMessage({
               type: "success",
               text: isCurrentlyStarred
-                ? "⭐ Repository already starred! Unstarring..."
-                : "⭐ Repository not starred! Starring...",
+                ? "⭐ Unstarring..."
+                : "⭐ Starring...",
             });
 
             // Set pending star flag - this will trigger the toggle action
@@ -470,7 +480,7 @@ export const Footer = () => {
             // Fallback to normal starring if status check fails
             pendingStarRef.current = true;
           }
-        }, 1000);
+        }, 2000); // Increased delay to allow GitHub star status to propagate across sessions
       } else {
         console.error("❌ Session establishment returned success=false:", data);
         throw new Error(data.message || "Session establishment failed");
