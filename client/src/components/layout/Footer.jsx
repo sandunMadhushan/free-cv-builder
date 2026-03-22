@@ -190,17 +190,8 @@ export const Footer = () => {
     };
   }, []);
 
-  // Check auth status when component mounts and clean up any leftover handlers
+  // Check star status when authentication status changes
   useEffect(() => {
-    // Clean up any existing GitHub auth handlers on mount
-    if (window.githubAuthHandlers) {
-      console.log("🧹 Cleaning up existing GitHub auth handlers");
-      window.githubAuthHandlers.forEach(handler => {
-        window.removeEventListener("message", handler);
-      });
-      window.githubAuthHandlers = [];
-    }
-
     if (isAuthenticated) {
       checkStarStatus();
     }
@@ -444,205 +435,15 @@ export const Footer = () => {
       return;
     }
 
-      // Initiate GitHub OAuth flow
-      try {
-        console.log("📡 Fetching GitHub auth URL...");
-        const response = await fetch(`${API_BASE_URL}/api/auth/github`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const data = await response.json();
-        console.log("🔑 Auth response:", data);
-
-        if (data.success && data.authUrl) {
-          console.log("🚀 Opening OAuth popup...");
-
-          // Open GitHub OAuth in a popup
-          const popup = window.open(
-            data.authUrl,
-            "github-auth",
-            "width=600,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,status=no"
-          );
-
-          // Check if popup was blocked
-          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-            console.error("❌ Popup was blocked by browser");
-            setStarMessage({
-              type: "info",
-              text: "❌ Please allow popups and try again. Your browser blocked the authentication window.",
-            });
-            return;
-          }
-
-          console.log("✅ Popup opened successfully");
-
-          let checkClosedInterval;
-
-          // Listen for the popup to close or receive a message
-          checkClosedInterval = setInterval(() => {
-            try {
-              if (popup.closed) {
-                console.log("🔍 Popup closed, checking auth status...");
-                clearInterval(checkClosedInterval);
-
-                // Clean up any remaining handlers
-                if (window.githubAuthHandlers) {
-                  window.githubAuthHandlers.forEach(handler => {
-                    window.removeEventListener("message", handler);
-                  });
-                  window.githubAuthHandlers = [];
-                }
-
-                // Check if auth was successful after popup closed
-                setTimeout(async () => {
-                  console.log("🔍 Checking authentication status after popup close...");
-                  setStarMessage({
-                    type: "success",
-                    text: "🔍 Checking authentication status...",
-                  });
-
-                  const authResult = await checkAuthStatus();
-                  if (authResult) {
-                    console.log("✅ Auth successful via popup close detection");
-                    setStarMessage({
-                      type: "success",
-                      text: "✅ Authentication successful! Starring repository...",
-                    });
-                    // Try to star after successful auth
-                    setTimeout(() => handleStarRepo(true), 1000);
-                  } else {
-                    console.log("❌ Auth not successful after popup close");
-                    setStarMessage({
-                      type: "info",
-                      text: "❌ Authentication was not completed. Please try clicking the star button again.",
-                    });
-                  }
-                }, 1500);
-              }
-            } catch (error) {
-              // Popup might be from different origin, ignore cross-origin errors
-              console.log("Popup check error (likely cross-origin):", error.message);
-            }
-          }, 1000);
-
-          // Listen for messages from the popup (callback from backend)
-          const handleMessage = (event) => {
-            console.log("📨 Received message from popup:", {
-              type: event.data?.type,
-              origin: event.origin,
-              expectedBackend: API_BASE_URL,
-              expectedOrigins: [window.location.origin, new URL(API_BASE_URL).origin],
-              isGitHubAuth: event.data?.type === 'github-auth-success',
-              fullData: event.data
-            });
-
-            // Only process GitHub auth messages, ignore other messages (extensions, etc.)
-            if (!event.data?.type?.includes('github-auth')) {
-              console.log("🚫 Ignoring non-GitHub auth message:", event.data?.type);
-              return;
-            }
-
-            // Accept messages from our backend domain
-            const backendDomain = new URL(API_BASE_URL).origin;
-            if (
-              event.origin !== window.location.origin &&
-              event.origin !== backendDomain
-            ) {
-              console.log("🚫 Ignoring message from unauthorized origin:", {
-                received: event.origin,
-                expected: [window.location.origin, backendDomain]
-              });
-              return;
-            }
-
-            if (event.data.type === "github-auth-success") {
-              console.log("🎉 GitHub auth success message received");
-
-              // Immediately close popup and clear intervals
-              if (popup && !popup.closed) {
-                popup.close();
-              }
-              clearInterval(checkClosedInterval);
-
-              // Show success message
-              setStarMessage({
-                type: "success",
-                text: "✅ GitHub authentication successful! Establishing session...",
-              });
-
-              // Get user data from popup
-              const userData = event.data.user;
-              console.log("👤 Received user data from popup:", userData);
-
-              if (!userData || !userData.access_token) {
-                console.error("❌ No user data received from popup");
-                setStarMessage({
-                  type: "info",
-                  text: "❌ Authentication failed - no user data received. Please try clicking the star button again.",
-                });
-                return;
-              }
-
-              // Clean up this specific handler before establishing session
-              window.removeEventListener("message", handleMessage);
-              window.githubAuthHandlers = window.githubAuthHandlers?.filter(h => h !== handleMessage) || [];
-
-              // Establish session with user data
-              establishSession(userData);
-            }
-
-            if (event.data.type === "github-auth-error") {
-              console.log("❌ GitHub auth error message received");
-              popup.close();
-              clearInterval(checkClosedInterval);
-
-              setStarMessage({
-                type: "info",
-                text: "❌ GitHub authentication failed. Please try again.",
-              });
-            }
-
-            // Clean up this specific handler
-            window.removeEventListener("message", handleMessage);
-            window.githubAuthHandlers = window.githubAuthHandlers?.filter(h => h !== handleMessage) || [];
-          };
-
-          // Store handler reference for cleanup
-          window.githubAuthHandlers = window.githubAuthHandlers || [];
-          window.githubAuthHandlers.push(handleMessage);
-
-          window.addEventListener("message", handleMessage);
-
-          console.log("👂 Message listener added for OAuth callback");
-        } else {
-          console.error("❌ Failed to get auth URL:", data);
-          setStarMessage({
-            type: "info",
-            text: "❌ Failed to initiate GitHub authentication",
-          });
-        }
-      } catch (error) {
-        console.error("❌ GitHub auth error:", error);
-        setStarMessage({
-          type: "info",
-          text: "❌ Failed to connect to authentication service",
-        });
-      }
-      return;
-    }
-
     // User is authenticated, proceed with starring
     console.log("User is authenticated, proceeding with starring...");
     setIsStarring(true);
 
     try {
-      const endpoint = isStarred
-        ? "/api/auth/repo/star"
-        : "/api/auth/repo/star";
       const method = isStarred ? "DELETE" : "POST";
 
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: method,
+      const response = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
+        method,
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
@@ -662,9 +463,6 @@ export const Footer = () => {
             ? "⭐ Repository unstarred!"
             : "⭐ Repository starred successfully!",
         });
-
-        // Refresh star count after a short delay
-        setTimeout(fetchStarCount, 2000);
       } else {
         throw new Error(data.message || "Failed to update star status");
       }
