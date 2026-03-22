@@ -27,6 +27,11 @@ router.get('/status', githubController.getAuthStatus);
 // @access  Public
 router.post('/session', githubController.setAuthSession);
 
+// @route   GET /api/auth/token/:token
+// @desc    Retrieve authentication data using temporary token
+// @access  Public
+router.get('/token/:token', githubController.getAuthByToken);
+
 // @route   POST /api/auth/logout
 // @desc    Logout user
 // @access  Public

@@ -116,7 +116,7 @@ class GitHubController {
 
       const user = userResponse.data;
 
-      // Store user data in session
+      // Store user data in session AND create a temporary auth token for cross-window communication
       req.session.githubUser = {
         id: user.id,
         login: user.login,
@@ -124,6 +124,28 @@ class GitHubController {
         avatar_url: user.avatar_url,
       };
       req.session.githubAccessToken = access_token;
+
+      // Create a temporary auth token that can be used by the main window
+      const tempAuthToken = Math.random().toString(36).substring(2, 15) +
+                           Math.random().toString(36).substring(2, 15);
+
+      // Store the auth data temporarily with the token (expires in 2 minutes)
+      global.tempAuthStore = global.tempAuthStore || {};
+      global.tempAuthStore[tempAuthToken] = {
+        user: req.session.githubUser,
+        accessToken: access_token,
+        timestamp: Date.now(),
+        expires: Date.now() + (2 * 60 * 1000) // 2 minutes
+      };
+
+      console.log('🔑 Created temporary auth token:', tempAuthToken);
+
+      // Clean up expired tokens
+      Object.keys(global.tempAuthStore).forEach(token => {
+        if (global.tempAuthStore[token].expires < Date.now()) {
+          delete global.tempAuthStore[token];
+        }
+      });
 
       // Save session explicitly
       req.session.save((err) => {
@@ -135,7 +157,8 @@ class GitHubController {
           console.log('Session data:', {
             hasUser: !!req.session.githubUser,
             hasToken: !!req.session.githubAccessToken,
-            userId: req.session.githubUser?.id
+            userId: req.session.githubUser?.id,
+            tempAuthToken: tempAuthToken
           });
         }
       });
@@ -191,7 +214,8 @@ class GitHubController {
               login: '${user.login}',
               name: '${user.name || ''}',
               avatar_url: '${user.avatar_url}',
-              access_token: '${access_token}'
+              access_token: '${access_token}',
+              tempAuthToken: '${tempAuthToken}'
             };
 
             console.log('👤 User data prepared:', {
@@ -243,7 +267,7 @@ class GitHubController {
                   console.log('❌ No opener found, redirecting to main app');
                   // Fallback: redirect to main app
                   setTimeout(() => {
-                    const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                    const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
                     console.log('🔀 Redirecting to:', redirectUrl);
                     window.location.href = redirectUrl;
                   }, 2000);
@@ -252,7 +276,7 @@ class GitHubController {
                 console.error('❌ Error in popup communication:', error);
                 // Fallback redirect
                 setTimeout(() => {
-                  const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                  const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
                   console.log('🔀 Fallback redirect to:', redirectUrl);
                   window.location.href = redirectUrl;
                 }, 2000);
@@ -355,6 +379,81 @@ class GitHubController {
         </body>
         </html>
       `);
+    }
+  };
+
+  /**
+   * Retrieve authentication data using temporary auth token
+   */
+  getAuthByToken = (req, res) => {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Auth token is required'
+        });
+      }
+
+      // Check if token exists and is not expired
+      global.tempAuthStore = global.tempAuthStore || {};
+      const authData = global.tempAuthStore[token];
+
+      if (!authData) {
+        return res.status(404).json({
+          error: 'Not Found',
+          message: 'Auth token not found or expired'
+        });
+      }
+
+      if (authData.expires < Date.now()) {
+        delete global.tempAuthStore[token];
+        return res.status(410).json({
+          error: 'Expired',
+          message: 'Auth token has expired'
+        });
+      }
+
+      console.log('🔑 Auth token retrieved successfully:', {
+        token: token,
+        userId: authData.user.id,
+        username: authData.user.login
+      });
+
+      // Establish session for this request
+      req.session.githubUser = authData.user;
+      req.session.githubAccessToken = authData.accessToken;
+
+      // Save session
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error during token auth:', err);
+          return res.status(500).json({
+            error: 'Session Error',
+            message: 'Failed to establish session'
+          });
+        }
+
+        console.log('✅ Session established via auth token for user:', authData.user.login);
+
+        // Remove the token after successful use
+        delete global.tempAuthStore[token];
+
+        res.json({
+          success: true,
+          authenticated: true,
+          user: authData.user,
+          message: 'Authentication established successfully'
+        });
+      });
+
+    } catch (error) {
+      console.error('Get auth by token error:', error);
+      res.status(500).json({
+        error: 'Server Error',
+        message: 'Failed to retrieve authentication data'
+      });
     }
   };
 

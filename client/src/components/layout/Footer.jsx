@@ -17,22 +17,69 @@ export const Footer = () => {
     const handleOAuthFallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const githubAuth = urlParams.get('github_auth');
+      const authToken = urlParams.get('token');
 
       if (githubAuth === 'success') {
-        console.log("🔄 Detected OAuth success via URL fallback - postMessage likely failed");
+        console.log("🔄 Detected OAuth success via URL fallback", {
+          hasToken: !!authToken,
+          token: authToken ? `${authToken.substring(0, 8)}...` : null
+        });
 
         setStarMessage({
           type: "success",
-          text: "🔍 GitHub authentication detected! Checking session...",
+          text: "🔍 GitHub authentication detected! Establishing session...",
         });
 
         // Clean up URL parameters
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
 
-        // Wait a moment for any pending session establishment, then check auth status
+        if (authToken) {
+          // Use the auth token to establish session
+          try {
+            console.log("🔑 Using auth token to establish session...");
+
+            const response = await fetch(`${API_BASE_URL}/api/auth/token/${authToken}`, {
+              method: "GET",
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              console.log("✅ Session established via auth token:", data);
+
+              if (data.success && data.authenticated) {
+                // Update local state
+                setIsAuthenticated(true);
+                setUser(data.user);
+
+                setStarMessage({
+                  type: "success",
+                  text: "✅ Authentication successful! Starring repository...",
+                });
+
+                // Proceed with starring after short delay
+                setTimeout(() => handleStarRepo(true), 1500);
+                return;
+              }
+            }
+
+            console.error("❌ Auth token session establishment failed");
+            throw new Error("Token authentication failed");
+
+          } catch (error) {
+            console.error("❌ Error using auth token:", error);
+            setStarMessage({
+              type: "info",
+              text: "❌ Session establishment failed. Please click the star button to try again.",
+            });
+            return;
+          }
+        }
+
+        // Fallback: wait and check auth status (old logic for backward compatibility)
         setTimeout(async () => {
-          console.log("🔍 Checking auth status after URL-based OAuth fallback...");
+          console.log("🔍 Checking auth status after URL-based OAuth fallback (no token)...");
           const authResult = await checkAuthStatus();
 
           if (authResult) {
@@ -43,7 +90,7 @@ export const Footer = () => {
             });
             setTimeout(() => handleStarRepo(true), 1000);
           } else {
-            console.log("❌ No session found after OAuth success - session establishment may have failed");
+            console.log("❌ No session found after OAuth success");
             console.log("🔄 Trying to re-establish session by checking backend logs...");
 
             // Try a direct auth check one more time
