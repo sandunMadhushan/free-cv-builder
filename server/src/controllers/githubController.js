@@ -184,7 +184,7 @@ class GitHubController {
           </div>
 
           <script>
-            console.log('GitHub OAuth success - sending user data to parent');
+            console.log('🎉 GitHub OAuth success - sending user data to parent');
 
             const userData = {
               id: ${user.id},
@@ -194,43 +194,80 @@ class GitHubController {
               access_token: '${access_token}'
             };
 
+            console.log('👤 User data prepared:', {
+              id: userData.id,
+              login: userData.login,
+              hasToken: !!userData.access_token
+            });
+
             // Function to close popup and notify parent with user data
             function closePopupAndNotify() {
               try {
+                console.log('🔍 Checking window opener...', {
+                  hasOpener: !!window.opener,
+                  openerClosed: window.opener ? window.opener.closed : 'N/A',
+                  currentOrigin: window.location.origin,
+                  parentOrigin: '${process.env.CLIENT_URL || 'http://localhost:5173'}'
+                });
+
                 // Send message with user data to parent window
                 if (window.opener && !window.opener.closed) {
-                  console.log('Sending success message with user data to parent window');
-                  window.opener.postMessage({
+                  console.log('📡 Sending success message with user data to parent window');
+
+                  const message = {
                     type: 'github-auth-success',
                     user: userData,
                     timestamp: Date.now()
-                  }, '*');
+                  };
+
+                  console.log('📤 Message to send:', message);
+
+                  // Send to all possible origins for better compatibility
+                  const targetOrigins = ['*', '${process.env.CLIENT_URL || 'http://localhost:5173'}'];
+
+                  targetOrigins.forEach(origin => {
+                    try {
+                      window.opener.postMessage(message, origin);
+                      console.log('✅ Message sent to origin:', origin);
+                    } catch (err) {
+                      console.error('❌ Failed to send to origin:', origin, err.message);
+                    }
+                  });
 
                   // Close popup after short delay
                   setTimeout(() => {
+                    console.log('🔒 Closing popup window');
                     window.close();
-                  }, 1000);
+                  }, 2000);
                 } else {
-                  console.log('No opener found, redirecting to main app');
+                  console.log('❌ No opener found, redirecting to main app');
                   // Fallback: redirect to main app
                   setTimeout(() => {
-                    window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                    const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                    console.log('🔀 Redirecting to:', redirectUrl);
+                    window.location.href = redirectUrl;
                   }, 2000);
                 }
               } catch (error) {
-                console.error('Error in popup communication:', error);
+                console.error('❌ Error in popup communication:', error);
                 // Fallback redirect
                 setTimeout(() => {
-                  window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                  const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&t=' + Date.now();
+                  console.log('🔀 Fallback redirect to:', redirectUrl);
+                  window.location.href = redirectUrl;
                 }, 2000);
               }
             }
 
             // Execute immediately and also after DOM load
+            console.log('🚀 Executing closePopupAndNotify immediately');
             closePopupAndNotify();
 
             // Backup execution after page load
-            window.addEventListener('load', closePopupAndNotify);
+            window.addEventListener('load', function() {
+              console.log('📄 DOM loaded, executing closePopupAndNotify again');
+              closePopupAndNotify();
+            });
 
             // Force close after 3 seconds as final backup
             setTimeout(() => {

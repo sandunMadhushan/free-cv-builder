@@ -345,7 +345,20 @@ export const Footer = () => {
 
           // Listen for messages from the popup (callback from backend)
           const handleMessage = (event) => {
-            console.log("📨 Received message from popup:", event.data);
+            console.log("📨 Received message from popup:", {
+              type: event.data?.type,
+              origin: event.origin,
+              expectedBackend: API_BASE_URL,
+              expectedOrigins: [window.location.origin, new URL(API_BASE_URL).origin],
+              isGitHubAuth: event.data?.type === 'github-auth-success',
+              fullData: event.data
+            });
+
+            // Only process GitHub auth messages, ignore other messages (extensions, etc.)
+            if (!event.data?.type?.includes('github-auth')) {
+              console.log("🚫 Ignoring non-GitHub auth message:", event.data?.type);
+              return;
+            }
 
             // Accept messages from our backend domain
             const backendDomain = new URL(API_BASE_URL).origin;
@@ -353,7 +366,10 @@ export const Footer = () => {
               event.origin !== window.location.origin &&
               event.origin !== backendDomain
             ) {
-              console.log("🚫 Ignoring message from unauthorized origin:", event.origin);
+              console.log("🚫 Ignoring message from unauthorized origin:", {
+                received: event.origin,
+                expected: [window.location.origin, backendDomain]
+              });
               return;
             }
 
