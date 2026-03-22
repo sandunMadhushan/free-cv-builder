@@ -468,26 +468,43 @@ class GitHubController {
    */
   getStarCount = async (req, res) => {
     try {
+      console.log('🌟 Fetching star count for repository:', `${this.repoOwner}/${this.repoName}`);
+
       const response = await axios.get(
         `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`,
         {
           headers: {
             'Accept': 'application/vnd.github+json',
+            'User-Agent': 'CV-Builder-App'
           },
+          timeout: 10000, // 10 second timeout
         }
       );
 
+      console.log('✅ Successfully fetched star count:', response.data.stargazers_count);
+
       res.json({
-        starCount: response.data.stargazers_count,
-        watchersCount: response.data.watchers_count,
-        forksCount: response.data.forks_count,
+        starCount: response.data.stargazers_count || 0,
+        watchersCount: response.data.watchers_count || 0,
+        forksCount: response.data.forks_count || 0,
       });
     } catch (error) {
-      console.error('Get star count error:', error);
-      res.status(500).json({
-        error: 'API Error',
-        message: 'Failed to fetch star count',
-        starCount: 0,
+      console.error('❌ Get star count error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        URL: `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`
+      });
+
+      // Return success with fallback data instead of 500 error
+      // This ensures the frontend always gets a valid response
+      res.json({
+        starCount: 0, // Fallback value
+        watchersCount: 0,
+        forksCount: 0,
+        error: 'Could not fetch live data',
+        message: error.response?.status === 403 ? 'Rate limited' : 'GitHub API unavailable'
       });
     }
   };

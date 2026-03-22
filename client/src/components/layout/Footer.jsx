@@ -52,7 +52,16 @@ export const Footer = () => {
         method: "GET",
         credentials: "include",
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+
+      if (data.error) {
+        console.warn("Star count API returned error:", data.error, data.message);
+      }
 
       setLastStarCount(starCount);
       setStarCount(data.starCount || 0);
@@ -93,11 +102,21 @@ export const Footer = () => {
         });
 
         // Wait a moment then proceed with starring
-        setTimeout(() => {
-          console.log(
-            "Session established successfully, proceeding to star repository",
-          );
-          handleStarRepo(true); // Skip auth check since we just authenticated
+        setTimeout(async () => {
+          console.log("Session established successfully, verifying authentication before starring");
+
+          // Double-check authentication status before proceeding
+          const authResult = await checkAuthStatus();
+          if (authResult) {
+            console.log("✅ Authentication verified, proceeding to star repository");
+            handleStarRepo(true); // Now it's safe to skip OAuth since we're authenticated
+          } else {
+            console.log("❌ Authentication verification failed");
+            setStarMessage({
+              type: "info",
+              text: "❌ Authentication verification failed. Please try again.",
+            });
+          }
         }, 500);
       } else {
         throw new Error(data.message || "Failed to establish session");
@@ -162,8 +181,19 @@ export const Footer = () => {
 
     console.log("handleStarRepo called:", { isAuthenticated, skipAuthCheck });
 
-    // Check if user is authenticated (unless we're skipping the check after OAuth)
-    if (!skipAuthCheck && !isAuthenticated) {
+    // Always check if user is actually authenticated before proceeding with starring
+    // skipAuthCheck only means we skip showing the OAuth popup, not the authentication requirement
+    if (!isAuthenticated) {
+      // If skipAuthCheck is true but user still not authenticated, show an error
+      if (skipAuthCheck) {
+        console.log("❌ Session establishment failed - user still not authenticated");
+        setStarMessage({
+          type: "info",
+          text: "❌ Authentication failed. Please try again.",
+        });
+        return;
+      }
+
       console.log("User not authenticated, initiating OAuth...");
       // Initiate GitHub OAuth flow
       try {
