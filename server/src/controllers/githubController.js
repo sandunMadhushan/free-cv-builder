@@ -315,11 +315,12 @@ class GitHubController {
         // Remove the token after successful use
         delete global.tempAuthStore[token];
 
-        // Send response - express-session will automatically set the cookie
+        // Send response - include access token for frontend to use in Authorization headers
         const responseData = {
           success: true,
           authenticated: true,
           user: authData.user,
+          accessToken: authData.accessToken, // Send token to frontend for Authorization headers
           sessionId: req.sessionID,
           message: 'Authentication established successfully'
         };
@@ -328,7 +329,8 @@ class GitHubController {
         console.log('📤 Sending auth response:', {
           sessionId: req.sessionID,
           userId: authData.user.id,
-          username: authData.user.login
+          username: authData.user.login,
+          hasAccessToken: !!authData.accessToken
         });
 
         res.json(responseData);
@@ -554,23 +556,40 @@ class GitHubController {
    */
   starRepository = async (req, res) => {
     try {
+      // Try to get access token from session first, then Authorization header as fallback
+      let accessToken = req.session.githubAccessToken;
+
+      // If no session token, check Authorization header
+      if (!accessToken) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          accessToken = authHeader.substring(7);
+          console.log('🔑 Using access token from Authorization header');
+        }
+      } else {
+        console.log('🔑 Using access token from session');
+      }
+
       console.log('⭐ Star repository request received:', {
         hasSession: !!req.session,
         sessionID: req.sessionID,
-        hasGithubAccessToken: !!req.session.githubAccessToken,
-        hasGithubUser: !!req.session.githubUser,
+        hasSessionToken: !!req.session.githubAccessToken,
+        hasAuthHeader: !!req.headers.authorization,
+        hasAccessToken: !!accessToken,
         cookies: req.cookies,
         headers: {
           cookie: req.headers.cookie,
+          authorization: req.headers.authorization ? 'Bearer [REDACTED]' : undefined,
           origin: req.headers.origin,
           referer: req.headers.referer
         }
       });
 
-      if (!req.session.githubAccessToken) {
-        console.log('❌ Star request rejected - no access token in session:', {
+      if (!accessToken) {
+        console.log('❌ Star request rejected - no access token available:', {
           sessionID: req.sessionID,
-          sessionData: req.session
+          sessionData: req.session,
+          authHeader: req.headers.authorization
         });
         return res.status(401).json({
           error: 'Authentication Required',
@@ -583,7 +602,7 @@ class GitHubController {
         {},
         {
           headers: {
-            'Authorization': `Bearer ${req.session.githubAccessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
           },
@@ -639,7 +658,21 @@ class GitHubController {
    */
   unstarRepository = async (req, res) => {
     try {
-      if (!req.session.githubAccessToken) {
+      // Try to get access token from session first, then Authorization header as fallback
+      let accessToken = req.session.githubAccessToken;
+
+      // If no session token, check Authorization header
+      if (!accessToken) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          accessToken = authHeader.substring(7);
+          console.log('🔑 Using access token from Authorization header for unstar');
+        }
+      } else {
+        console.log('🔑 Using access token from session for unstar');
+      }
+
+      if (!accessToken) {
         return res.status(401).json({
           error: 'Authentication Required',
           message: 'Please authenticate with GitHub first'
@@ -650,7 +683,7 @@ class GitHubController {
         `${this.githubApiBaseUrl}/user/starred/${this.repoOwner}/${this.repoName}`,
         {
           headers: {
-            'Authorization': `Bearer ${req.session.githubAccessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Accept': 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
           },
@@ -706,7 +739,21 @@ class GitHubController {
    */
   checkStarStatus = async (req, res) => {
     try {
-      if (!req.session.githubAccessToken) {
+      // Try to get access token from session first, then Authorization header as fallback
+      let accessToken = req.session.githubAccessToken;
+
+      // If no session token, check Authorization header
+      if (!accessToken) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          accessToken = authHeader.substring(7);
+          console.log('🔑 Using access token from Authorization header for star status check');
+        }
+      } else {
+        console.log('🔑 Using access token from session for star status check');
+      }
+
+      if (!accessToken) {
         return res.json({
           authenticated: false,
           isStarred: false,
@@ -719,7 +766,7 @@ class GitHubController {
           `${this.githubApiBaseUrl}/user/starred/${this.repoOwner}/${this.repoName}`,
           {
             headers: {
-              'Authorization': `Bearer ${req.session.githubAccessToken}`,
+              'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/vnd.github+json',
             },
           }

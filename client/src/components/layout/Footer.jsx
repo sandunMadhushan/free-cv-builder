@@ -8,6 +8,7 @@ export const Footer = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [isStarred, setIsStarred] = useState(false);
+  const [accessToken, setAccessToken] = useState(null); // Store GitHub access token
 
   // Ref to prevent auth status checks from overriding fresh authentication
   const freshAuthRef = useRef(false);
@@ -82,6 +83,7 @@ export const Footer = () => {
                 // Update local state
                 setIsAuthenticated(true);
                 setUser(data.user);
+                setAccessToken(data.accessToken); // Store access token for API requests
 
                 // Keep fresh auth protection active
                 setTimeout(() => {
@@ -92,6 +94,7 @@ export const Footer = () => {
                 console.log("✅ Session established successfully, user authenticated:", {
                   userId: data.user?.id,
                   username: data.user?.login,
+                  hasAccessToken: !!data.accessToken,
                   shouldAutoStar,
                   freshAuthProtection: freshAuthRef.current
                 });
@@ -314,6 +317,7 @@ export const Footer = () => {
         // Update local state
         setIsAuthenticated(true);
         setUser(data.user);
+        setAccessToken(data.accessToken); // Store access token for API requests
 
         // Keep fresh auth protection active
         setTimeout(() => {
@@ -324,6 +328,7 @@ export const Footer = () => {
         console.log("🎉 Session successfully established! User is now authenticated", {
           userId: data.user?.id,
           username: data.user?.login,
+          hasAccessToken: !!data.accessToken,
           freshAuthProtection: freshAuthRef.current
         });
 
@@ -411,11 +416,19 @@ export const Footer = () => {
     if (!isAuthenticated) return;
 
     try {
+      // Use Authorization header with access token if available
+      const headers = {};
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+        console.log("🔑 Using access token for star status check");
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/api/auth/repo/star/status`,
         {
           method: "GET",
           credentials: "include",
+          headers,
         },
       );
       const data = await response.json();
@@ -516,12 +529,22 @@ export const Footer = () => {
     try {
       const method = isStarred ? "DELETE" : "POST";
 
+      // Use Authorization header with access token
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+        console.log("🔑 Using access token for star request");
+      } else {
+        console.log("⚠️ No access token available, relying on session cookies");
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/auth/repo/star`, {
         method,
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
       });
 
       const data = await response.json();
