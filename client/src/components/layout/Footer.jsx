@@ -153,22 +153,23 @@ export const Footer = () => {
                           : "⭐ Starring...",
                       });
 
-                      // Execute the star/unstar action immediately
+                      // Execute the star/unstar action immediately with access token
                       console.log("🎯 Executing auto-star action immediately:", {
                         currentlyStarred: isCurrentlyStarred,
-                        action: isCurrentlyStarred ? 'unstar' : 'star'
+                        action: isCurrentlyStarred ? 'unstar' : 'star',
+                        hasAccessToken: !!data.accessToken
                       });
 
-                      // Small delay to ensure UI updates first
+                      // Use the access token directly to avoid race condition
                       setTimeout(() => {
-                        handleStarRepo(true);
+                        handleStarRepo(true, data.accessToken);
                       }, 500);
 
                     } catch (error) {
                       console.error("❌ Error checking star status for auto-toggle:", error);
                       // Fallback to normal starring if status check fails
                       setTimeout(() => {
-                        handleStarRepo(true);
+                        handleStarRepo(true, data.accessToken);
                       }, 500);
                     }
                   }, 2000); // Increased delay to allow GitHub star status to propagate across sessions
@@ -641,7 +642,7 @@ export const Footer = () => {
     }
   };
 
-  const handleStarRepo = async (skipAuthCheck = false) => {
+  const handleStarRepo = async (skipAuthCheck = false, providedAccessToken = null) => {
     if (isStarring) {
       console.log("Already starring, skipping...");
       return;
@@ -652,12 +653,15 @@ export const Footer = () => {
       skipAuthCheck,
       source: skipAuthCheck ? 'automatic' : 'button-click',
       freshAuthActive: freshAuthRef.current,
-      userState: user?.login || 'null'
+      userState: user?.login || 'null',
+      hasProvidedToken: !!providedAccessToken
     });
 
-    // Always check if user is actually authenticated before proceeding with starring
-    // skipAuthCheck only means we skip showing the OAuth popup, not the authentication requirement
-    if (!isAuthenticated) {
+    // Check authentication requirement
+    // If we have a provided access token, we can proceed even if React auth state isn't ready
+    const canProceed = isAuthenticated || !!providedAccessToken;
+
+    if (!canProceed) {
       // If skipAuthCheck is true but user still not authenticated, show an error
       if (skipAuthCheck) {
         console.log("❌ Auto-starring failed - user authentication state lost", {
@@ -730,9 +734,13 @@ export const Footer = () => {
       // Always check current star status first to ensure accuracy across sessions
       console.log("🔍 Checking current star status before proceeding...");
 
+      const effectiveAccessToken = providedAccessToken || accessToken;
       const statusHeaders = {};
-      if (accessToken) {
-        statusHeaders.Authorization = `Bearer ${accessToken}`;
+      if (effectiveAccessToken) {
+        statusHeaders.Authorization = `Bearer ${effectiveAccessToken}`;
+        console.log("🔑 Using access token for status check", {
+          source: providedAccessToken ? 'provided' : 'state'
+        });
       }
 
       const statusResponse = await fetch(
@@ -790,14 +798,17 @@ export const Footer = () => {
 
       console.log(`📌 Proceeding with ${actionText} (current status: ${currentStarStatus ? 'starred' : 'not starred'})`);
 
-      // Use Authorization header with access token
+      // Use Authorization header with access token (prefer provided token over state)
+      const effectiveAccessToken = providedAccessToken || accessToken;
       const headers = {
         "Content-Type": "application/json",
       };
 
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-        console.log("🔑 Using access token for star request");
+      if (effectiveAccessToken) {
+        headers.Authorization = `Bearer ${effectiveAccessToken}`;
+        console.log("🔑 Using access token for star request", {
+          source: providedAccessToken ? 'provided' : 'state'
+        });
       } else {
         console.log("⚠️ No access token available, relying on session cookies");
       }
