@@ -553,7 +553,24 @@ class GitHubController {
    */
   starRepository = async (req, res) => {
     try {
+      console.log('⭐ Star repository request received:', {
+        hasSession: !!req.session,
+        sessionID: req.sessionID,
+        hasGithubAccessToken: !!req.session.githubAccessToken,
+        hasGithubUser: !!req.session.githubUser,
+        cookies: req.cookies,
+        headers: {
+          cookie: req.headers.cookie,
+          origin: req.headers.origin,
+          referer: req.headers.referer
+        }
+      });
+
       if (!req.session.githubAccessToken) {
+        console.log('❌ Star request rejected - no access token in session:', {
+          sessionID: req.sessionID,
+          sessionData: req.session
+        });
         return res.status(401).json({
           error: 'Authentication Required',
           message: 'Please authenticate with GitHub first'
