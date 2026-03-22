@@ -164,10 +164,18 @@ class GitHubController {
       });
 
       // Send a simple HTML page that closes the popup and notifies parent
+      // Use meta refresh as backup in case JavaScript is blocked
+      res.set({
+        'Content-Security-Policy': 'script-src \'unsafe-inline\' \'self\'; object-src \'none\';'
+      });
+
       res.send(`
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta http-equiv="refresh" content="3;url=${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=${Date.now()}">
           <title>GitHub Authentication Success</title>
           <style>
             body {
@@ -202,103 +210,96 @@ class GitHubController {
           <div class="container">
             <div class="success-icon">✅</div>
             <h2>Authentication Successful!</h2>
-            <p>Starring repository automatically...</p>
-            <p><small>This window will close in 2 seconds</small></p>
+            <p>Redirecting and starring repository...</p>
+            <p><small>This window will close automatically</small></p>
           </div>
 
-          <script>
-            console.log('🎉 GitHub OAuth success - sending user data to parent');
+          <script type="text/javascript">
+            (function() {
+              console.log('🎉 GitHub OAuth success - executing callback script');
 
-            const userData = {
-              id: ${user.id},
-              login: '${user.login}',
-              name: '${user.name || ''}',
-              avatar_url: '${user.avatar_url}',
-              access_token: '${access_token}',
-              tempAuthToken: '${tempAuthToken}'
-            };
+              var userData = {
+                id: ${user.id},
+                login: '${user.login}',
+                name: '${user.name || ''}',
+                avatar_url: '${user.avatar_url}',
+                access_token: '${access_token}',
+                tempAuthToken: '${tempAuthToken}'
+              };
 
-            console.log('👤 User data prepared:', {
-              id: userData.id,
-              login: userData.login,
-              hasToken: !!userData.access_token
-            });
+              console.log('👤 User data prepared:', {
+                id: userData.id,
+                login: userData.login,
+                hasToken: !!userData.access_token
+              });
 
-            // Function to close popup and notify parent with user data
-            function closePopupAndNotify() {
-              try {
-                console.log('🔍 Checking window opener...', {
-                  hasOpener: !!window.opener,
-                  openerClosed: window.opener ? window.opener.closed : 'N/A',
-                  currentOrigin: window.location.origin,
-                  parentOrigin: '${process.env.CLIENT_URL || 'http://localhost:5173'}'
-                });
-
-                // Send message with user data to parent window
-                if (window.opener && !window.opener.closed) {
-                  console.log('📡 Sending success message with user data to parent window');
-
-                  const message = {
-                    type: 'github-auth-success',
-                    user: userData,
-                    timestamp: Date.now()
-                  };
-
-                  console.log('📤 Message to send:', message);
-
-                  // Send to all possible origins for better compatibility
-                  const targetOrigins = ['*', '${process.env.CLIENT_URL || 'http://localhost:5173'}'];
-
-                  targetOrigins.forEach(origin => {
-                    try {
-                      window.opener.postMessage(message, origin);
-                      console.log('✅ Message sent to origin:', origin);
-                    } catch (err) {
-                      console.error('❌ Failed to send to origin:', origin, err.message);
-                    }
+              function executeCallback() {
+                try {
+                  console.log('🔍 Checking window opener...', {
+                    hasOpener: !!window.opener,
+                    openerClosed: window.opener ? window.opener.closed : 'N/A'
                   });
 
-                  // Close popup after short delay
-                  setTimeout(() => {
-                    console.log('🔒 Closing popup window');
-                    window.close();
-                  }, 2000);
-                } else {
-                  console.log('❌ No opener found, redirecting to main app');
-                  // Fallback: redirect to main app
-                  setTimeout(() => {
-                    const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
-                    console.log('🔀 Redirecting to:', redirectUrl);
-                    window.location.href = redirectUrl;
-                  }, 2000);
+                  if (window.opener && !window.opener.closed) {
+                    console.log('📡 Sending success message to parent window');
+
+                    var message = {
+                      type: 'github-auth-success',
+                      user: userData,
+                      timestamp: Date.now()
+                    };
+
+                    console.log('📤 Message to send:', message);
+
+                    // Try multiple postMessage attempts
+                    try {
+                      window.opener.postMessage(message, '*');
+                      console.log('✅ Message sent to parent window');
+                    } catch (err) {
+                      console.error('❌ PostMessage failed:', err.message);
+                    }
+
+                    // Also try with specific origin
+                    try {
+                      window.opener.postMessage(message, '${process.env.CLIENT_URL || 'http://localhost:5173'}');
+                      console.log('✅ Message sent to specific origin');
+                    } catch (err) {
+                      console.error('❌ Specific origin postMessage failed:', err.message);
+                    }
+
+                    // Close popup after delay
+                    setTimeout(function() {
+                      console.log('🔒 Closing popup window');
+                      window.close();
+                    }, 1500);
+
+                  } else {
+                    console.log('❌ No opener found, using redirect fallback');
+                    redirectToMain();
+                  }
+                } catch (error) {
+                  console.error('❌ Callback execution error:', error);
+                  redirectToMain();
                 }
-              } catch (error) {
-                console.error('❌ Error in popup communication:', error);
-                // Fallback redirect
-                setTimeout(() => {
-                  const redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
-                  console.log('🔀 Fallback redirect to:', redirectUrl);
-                  window.location.href = redirectUrl;
-                }, 2000);
               }
-            }
 
-            // Execute immediately and also after DOM load
-            console.log('🚀 Executing closePopupAndNotify immediately');
-            closePopupAndNotify();
-
-            // Backup execution after page load
-            window.addEventListener('load', function() {
-              console.log('📄 DOM loaded, executing closePopupAndNotify again');
-              closePopupAndNotify();
-            });
-
-            // Force close after 3 seconds as final backup
-            setTimeout(() => {
-              if (window.opener && !window.opener.closed) {
-                window.close();
+              function redirectToMain() {
+                var redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
+                console.log('🔀 Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
               }
-            }, 3000);
+
+              // Execute immediately
+              console.log('🚀 Executing callback immediately');
+              executeCallback();
+
+              // Backup execution after short delay
+              setTimeout(executeCallback, 500);
+
+              // Force redirect as final fallback
+              setTimeout(redirectToMain, 2500);
+
+            })();
           </script>
         </body>
         </html>
