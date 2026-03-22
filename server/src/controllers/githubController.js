@@ -798,14 +798,14 @@ class GitHubController {
 
         console.log('✅ GitHub API star status response:', {
           status: response.status,
-          isStarred: response.status === 200,
+          isStarred: response.status === 204,
           timestamp: new Date().toISOString()
         });
 
-        // If we get a 200, the repo is starred
+        // If we get a 204, the repo is starred (GitHub API standard)
         return res.json({
           authenticated: true,
-          isStarred: response.status === 200,
+          isStarred: response.status === 204,
           message: 'Repository is starred',
           timestamp: new Date().toISOString()
         });
