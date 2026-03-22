@@ -661,6 +661,9 @@ export const Footer = () => {
     // If we have a provided access token, we can proceed even if React auth state isn't ready
     const canProceed = isAuthenticated || !!providedAccessToken;
 
+    // Use effective access token throughout the function (prefer provided over state)
+    const effectiveAccessToken = providedAccessToken || accessToken;
+
     if (!canProceed) {
       // If skipAuthCheck is true but user still not authenticated, show an error
       if (skipAuthCheck) {
@@ -734,7 +737,6 @@ export const Footer = () => {
       // Always check current star status first to ensure accuracy across sessions
       console.log("🔍 Checking current star status before proceeding...");
 
-      const effectiveAccessToken = providedAccessToken || accessToken;
       const statusHeaders = {};
       if (effectiveAccessToken) {
         statusHeaders.Authorization = `Bearer ${effectiveAccessToken}`;
@@ -799,7 +801,6 @@ export const Footer = () => {
       console.log(`📌 Proceeding with ${actionText} (current status: ${currentStarStatus ? 'starred' : 'not starred'})`);
 
       // Use Authorization header with access token (prefer provided token over state)
-      const effectiveAccessToken = providedAccessToken || accessToken;
       const headers = {
         "Content-Type": "application/json",
       };
