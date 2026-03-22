@@ -611,15 +611,19 @@ class GitHubController {
 
       // Star API returns 204 on success
       if (response.status === 204) {
-        // Get updated star count
+        // Get updated star count with authentication to avoid rate limits
         const repoResponse = await axios.get(
           `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`,
           {
             headers: {
+              'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
             },
           }
         );
+
+        console.log("✅ Repository starred successfully, updated star count:", repoResponse.data.stargazers_count);
 
         res.json({
           success: true,
@@ -692,15 +696,19 @@ class GitHubController {
 
       // Unstar API returns 204 on success
       if (response.status === 204) {
-        // Get updated star count
+        // Get updated star count with authentication to avoid rate limits
         const repoResponse = await axios.get(
           `${this.githubApiBaseUrl}/repos/${this.repoOwner}/${this.repoName}`,
           {
             headers: {
+              'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
             },
           }
         );
+
+        console.log("✅ Repository unstarred successfully, updated star count:", repoResponse.data.stargazers_count);
 
         res.json({
           success: true,

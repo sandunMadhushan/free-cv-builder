@@ -200,23 +200,20 @@ export const Footer = () => {
     // Auto-refresh star count and status when user comes back to the tab
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated) {
-        console.log("👁️ Tab became visible - checking for star status changes across sessions");
-        setTimeout(() => {
-          // Always fetch fresh star count and status to detect cross-session changes
-          fetchStarCount();
-          checkStarStatus();
-        }, 1000);
+        console.log("👁️ Tab became visible - immediately checking for star status changes across sessions");
+        // Immediate check for cross-session changes
+        fetchStarCount();
+        checkStarStatus();
       }
     };
 
     // Auto-refresh when window gains focus (switching between browser windows)
     const handleWindowFocus = () => {
       if (isAuthenticated) {
-        console.log("🔍 Window gained focus - checking for star status changes across browsers");
-        setTimeout(() => {
-          fetchStarCount();
-          checkStarStatus();
-        }, 500);
+        console.log("🔍 Window gained focus - immediately checking for star status changes across browsers");
+        // Immediate check for cross-browser changes
+        fetchStarCount();
+        checkStarStatus();
       }
     };
 
@@ -277,7 +274,7 @@ export const Footer = () => {
         console.log("🔄 Periodic sync - checking for star status changes");
         checkStarStatus();
       }
-    }, 45000); // Check every 45 seconds
+    }, 30000); // Check every 30 seconds for more responsive sync
 
     return () => {
       console.log("🛑 Clearing periodic star status sync");
@@ -602,7 +599,64 @@ export const Footer = () => {
     setIsStarring(true);
 
     try {
-      const method = isStarred ? "DELETE" : "POST";
+      // Always check current star status first to ensure accuracy across sessions
+      console.log("🔍 Checking current star status before proceeding...");
+
+      const statusHeaders = {};
+      if (accessToken) {
+        statusHeaders.Authorization = `Bearer ${accessToken}`;
+      }
+
+      const statusResponse = await fetch(
+        `${API_BASE_URL}/api/auth/repo/star/status`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: statusHeaders,
+        },
+      );
+
+      const statusData = await statusResponse.json();
+      const currentStarStatus = statusData.authenticated ? statusData.isStarred : false;
+
+      console.log("📊 Current star status from server:", {
+        authenticated: statusData.authenticated,
+        currentlyStarred: currentStarStatus,
+        localState: isStarred,
+        statusMatch: currentStarStatus === isStarred
+      });
+
+      // Update local state to match server reality
+      if (statusData.authenticated && currentStarStatus !== isStarred) {
+        console.log("🔄 Updating local star status to match server:", {
+          from: isStarred,
+          to: currentStarStatus
+        });
+        setIsStarred(currentStarStatus);
+
+        // Show sync message
+        setStarMessage({
+          type: "info",
+          text: currentStarStatus
+            ? "⭐ Repository status synced - you've already starred this!"
+            : "⭐ Repository status synced - not currently starred",
+        });
+
+        // Clear sync message quickly
+        setTimeout(() => {
+          setStarMessage(null);
+        }, 2000);
+
+        // Don't proceed with star/unstar action, just sync the state
+        setIsStarring(false);
+        return;
+      }
+
+      // Proceed with star/unstar based on current status
+      const method = currentStarStatus ? "DELETE" : "POST";
+      const actionText = currentStarStatus ? "unstarring" : "starring";
+
+      console.log(`📌 Proceeding with ${actionText} (current status: ${currentStarStatus ? 'starred' : 'not starred'})`);
 
       // Use Authorization header with access token
       const headers = {
@@ -625,15 +679,22 @@ export const Footer = () => {
       const data = await response.json();
 
       if (data.success) {
-        setIsStarred(!isStarred);
+        const newStarStatus = !currentStarStatus;
+        setIsStarred(newStarStatus);
         setLastStarCount(starCount);
         setStarCount(data.starCount);
 
         setStarMessage({
           type: "success",
-          text: isStarred
-            ? "⭐ Repository unstarred!"
-            : "⭐ Repository starred successfully!",
+          text: newStarStatus
+            ? "⭐ Repository starred successfully!"
+            : "⭐ Repository unstarred successfully!",
+        });
+
+        console.log("✅ Star action completed:", {
+          action: newStarStatus ? 'starred' : 'unstarred',
+          newStarCount: data.starCount,
+          previousStarCount: starCount
         });
       } else {
         throw new Error(data.message || "Failed to update star status");
