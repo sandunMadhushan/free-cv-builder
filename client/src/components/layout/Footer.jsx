@@ -12,6 +12,66 @@ export const Footer = () => {
   const API_BASE_URL =
     import.meta.env.VITE_API_URL || "https://cv-builder-api-fexd.onrender.com";
 
+  // Handle URL-based OAuth success fallback (when postMessage fails)
+  useEffect(() => {
+    const handleOAuthFallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const githubAuth = urlParams.get('github_auth');
+
+      if (githubAuth === 'success') {
+        console.log("🔄 Detected OAuth success via URL fallback - postMessage likely failed");
+
+        setStarMessage({
+          type: "success",
+          text: "🔍 GitHub authentication detected! Checking session...",
+        });
+
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+
+        // Wait a moment for any pending session establishment, then check auth status
+        setTimeout(async () => {
+          console.log("🔍 Checking auth status after URL-based OAuth fallback...");
+          const authResult = await checkAuthStatus();
+
+          if (authResult) {
+            console.log("✅ Session found after URL fallback - proceeding to star");
+            setStarMessage({
+              type: "success",
+              text: "✅ Authentication successful! Starring repository...",
+            });
+            setTimeout(() => handleStarRepo(true), 1000);
+          } else {
+            console.log("❌ No session found after OAuth success - session establishment may have failed");
+            console.log("🔄 Trying to re-establish session by checking backend logs...");
+
+            // Try a direct auth check one more time
+            setTimeout(async () => {
+              const finalAuthCheck = await checkAuthStatus();
+              if (finalAuthCheck) {
+                console.log("✅ Session found on retry!");
+                setStarMessage({
+                  type: "success",
+                  text: "✅ Authentication successful! Starring repository...",
+                });
+                setTimeout(() => handleStarRepo(true), 500);
+              } else {
+                console.log("❌ Session still not found - OAuth may need to be repeated");
+                setStarMessage({
+                  type: "info",
+                  text: "❌ Session not established. Please click the star button to try again.",
+                });
+              }
+            }, 3000);
+          }
+        }, 2000);
+      }
+    };
+
+    handleOAuthFallback();
+  }, []);
+
   // Fetch GitHub star count and auth status
   useEffect(() => {
     const initializeData = async () => {
