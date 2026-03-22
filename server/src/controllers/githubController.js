@@ -164,9 +164,9 @@ class GitHubController {
       });
 
       // Send a simple HTML page that closes the popup and notifies parent
-      // Use meta refresh as backup in case JavaScript is blocked
+      // Use immediate meta refresh as primary method, JavaScript as secondary
       res.set({
-        'Content-Security-Policy': 'script-src \'unsafe-inline\' \'self\'; object-src \'none\';'
+        'Content-Security-Policy': 'default-src \'self\' \'unsafe-inline\' data:; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\';'
       });
 
       res.send(`
@@ -175,13 +175,13 @@ class GitHubController {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <meta http-equiv="refresh" content="3;url=${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=${Date.now()}">
+          <meta http-equiv="refresh" content="1;url=${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=${Date.now()}">
           <title>GitHub Authentication Success</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
               text-align: center;
-              padding: 50px;
+              padding: 30px;
               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
               color: white;
               margin: 0;
@@ -190,58 +190,55 @@ class GitHubController {
               background: rgba(255,255,255,0.1);
               backdrop-filter: blur(10px);
               border-radius: 20px;
-              padding: 40px;
-              max-width: 400px;
+              padding: 30px;
+              max-width: 350px;
               margin: 0 auto;
             }
             .success-icon {
-              font-size: 60px;
-              margin-bottom: 20px;
-              animation: bounce 1s ease-in-out;
+              font-size: 50px;
+              margin-bottom: 15px;
+              animation: pulse 1s ease-in-out infinite;
             }
-            @keyframes bounce {
-              0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-              40% { transform: translateY(-10px); }
-              60% { transform: translateY(-5px); }
+            @keyframes pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.1); }
+            }
+            .countdown {
+              font-size: 18px;
+              font-weight: bold;
+              color: #4ade80;
             }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="success-icon">✅</div>
-            <h2>Authentication Successful!</h2>
-            <p>Redirecting and starring repository...</p>
-            <p><small>This window will close automatically</small></p>
+            <h2>Success!</h2>
+            <p>Authentication completed</p>
+            <div class="countdown" id="countdown">Redirecting in 1 second...</div>
           </div>
 
-          <script type="text/javascript">
+          <script>
+            // Immediate execution - no waiting for DOM
             (function() {
-              console.log('🎉 GitHub OAuth success - executing callback script');
+              console.log('🎉 GitHub OAuth callback loaded');
 
               var userData = {
                 id: ${user.id},
                 login: '${user.login}',
-                name: '${user.name || ''}',
+                name: '${user.name || user.login}',
                 avatar_url: '${user.avatar_url}',
                 access_token: '${access_token}',
                 tempAuthToken: '${tempAuthToken}'
               };
 
-              console.log('👤 User data prepared:', {
-                id: userData.id,
-                login: userData.login,
-                hasToken: !!userData.access_token
-              });
+              console.log('👤 User data:', userData.login);
 
-              function executeCallback() {
+              // Try to send postMessage immediately
+              function sendMessage() {
                 try {
-                  console.log('🔍 Checking window opener...', {
-                    hasOpener: !!window.opener,
-                    openerClosed: window.opener ? window.opener.closed : 'N/A'
-                  });
-
                   if (window.opener && !window.opener.closed) {
-                    console.log('📡 Sending success message to parent window');
+                    console.log('📡 Sending message to parent');
 
                     var message = {
                       type: 'github-auth-success',
@@ -249,55 +246,45 @@ class GitHubController {
                       timestamp: Date.now()
                     };
 
-                    console.log('📤 Message to send:', message);
+                    window.opener.postMessage(message, '*');
+                    window.opener.postMessage(message, '${process.env.CLIENT_URL || 'http://localhost:5173'}');
 
-                    // Try multiple postMessage attempts
-                    try {
-                      window.opener.postMessage(message, '*');
-                      console.log('✅ Message sent to parent window');
-                    } catch (err) {
-                      console.error('❌ PostMessage failed:', err.message);
-                    }
+                    console.log('✅ Messages sent');
 
-                    // Also try with specific origin
-                    try {
-                      window.opener.postMessage(message, '${process.env.CLIENT_URL || 'http://localhost:5173'}');
-                      console.log('✅ Message sent to specific origin');
-                    } catch (err) {
-                      console.error('❌ Specific origin postMessage failed:', err.message);
-                    }
-
-                    // Close popup after delay
+                    // Try to close popup
                     setTimeout(function() {
-                      console.log('🔒 Closing popup window');
+                      console.log('🔒 Closing popup');
                       window.close();
-                    }, 1500);
-
+                    }, 500);
                   } else {
-                    console.log('❌ No opener found, using redirect fallback');
-                    redirectToMain();
+                    console.log('❌ No opener, will redirect');
                   }
                 } catch (error) {
-                  console.error('❌ Callback execution error:', error);
-                  redirectToMain();
+                  console.error('❌ Error:', error);
                 }
               }
 
-              function redirectToMain() {
-                var redirectUrl = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
-                console.log('🔀 Redirecting to:', redirectUrl);
-                window.location.href = redirectUrl;
+              // Execute immediately
+              sendMessage();
+
+              // Countdown display
+              var count = 1;
+              var countdownEl = document.getElementById('countdown');
+              if (countdownEl) {
+                var timer = setInterval(function() {
+                  count--;
+                  countdownEl.textContent = count > 0 ? 'Redirecting in ' + count + ' second...' : 'Redirecting now...';
+                  if (count <= 0) {
+                    clearInterval(timer);
+                  }
+                }, 1000);
               }
 
-              // Execute immediately
-              console.log('🚀 Executing callback immediately');
-              executeCallback();
-
-              // Backup execution after short delay
-              setTimeout(executeCallback, 500);
-
-              // Force redirect as final fallback
-              setTimeout(redirectToMain, 2500);
+              // Force redirect after 1.5 seconds (backup to meta refresh)
+              setTimeout(function() {
+                console.log('🔀 Force redirect');
+                window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}?github_auth=success&token=${tempAuthToken}&t=' + Date.now();
+              }, 1500);
 
             })();
           </script>
